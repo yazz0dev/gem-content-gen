@@ -12,7 +12,7 @@ const firebaseConfig = {
   appId: import.meta.env.VUE_APP_FIREBASE_APP_ID,
   measurementId: import.meta.env.VUE_APP_FIREBASE_MEASUREMENT_ID
 };
-
+console.log("Firebase API Key:", import.meta.env.VUE_APP_FIREBASE_API_KEY);
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
