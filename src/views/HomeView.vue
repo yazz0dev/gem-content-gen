@@ -32,14 +32,14 @@ import ResumePreview from "@/components/ResumePreview.vue";
 import TemplateSelector from "@/components/TemplateSelector.vue";
 import LoadingSpinner from "@/components/LoadingSpinner.vue";
 import RatingComponent from "@/components/RatingComponent.vue";
-import CustomizationPrompts from "@/components/CustomizationPrompts.vue"; // Import
+import CustomizationPrompts from "@/components/CustomizationPrompts.vue"; 
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import html2pdf from 'html2pdf.js';
 import { db } from '@/firebase';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { auth } from '@/firebase';
 
-const genAI = new GoogleGenerativeAI(import.meta.env.VUE_APP_GEMINI_API_KEY);
+const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
 
 export default {
   name: "HomeView",
