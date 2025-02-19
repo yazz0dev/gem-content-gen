@@ -1,6 +1,5 @@
 // src/utils/generation.js
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import DOMPurify from 'dompurify';
 
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
 
@@ -111,32 +110,3 @@ return doc.body.innerHTML;
 }
 
 export { generateResume };
-
-
-// --- IP Blocking (Conceptual - Requires Server-Side Implementation) ---
-//
-// To implement IP-based rate limiting, you *must* use a server-side
-// component (like Firebase Cloud Functions) to:
-//
-// 1.  **Receive the request:**  The client sends a request to the Cloud
-//     Function *instead* of directly to the Gemini API.
-// 2.  **Get the IP:** The Cloud Function securely retrieves the user's IP
-//     address.  (Client-side IP detection is unreliable and easily spoofed.)
-// 3.  **Check the database:**  Query a Firestore collection (e.g.,
-//     `ipRateLimits`) to see if the IP has exceeded its limit within the
-//     time window (e.g., 1 request per 24 hours).
-// 4.  **Increment/Store:** If the IP is allowed, increment a counter for
-//     that IP and store/update the timestamp.
-// 5.  **Call Gemini:**  If the IP is allowed, the Cloud Function then calls
-//     the Gemini API on behalf of the user.
-// 6.  **Return Response:** The Cloud Function returns the Gemini response
-//     (or an error) to the client.
-//
-// The `canGenerateResume` function would need to be adapted to check
-// against the `ipRateLimits` collection instead of (or in addition to) the
-// per-user limit.  You would also need separate functions to handle the IP
-// tracking.
-//
-// This is a simplified description; a robust implementation would need to
-// consider edge cases, potential abuse, and appropriate data structures for
-// efficient querying.

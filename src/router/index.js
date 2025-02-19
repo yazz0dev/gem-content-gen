@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import LeaderboardComponent from '@/components/LeaderboardComponent.vue';
-import AuthForm from '@/components/AuthForm.vue'; 
+import AuthForm from '@/components/AuthForm.vue';
 import { auth } from '@/firebase';
 
 const routes = [

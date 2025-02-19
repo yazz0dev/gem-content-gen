@@ -24,17 +24,24 @@ async function canGenerateResume(userId) {
     if (userDocSnap.exists()) {
         const userData = userDocSnap.data();
         const lastGeneration = userData.lastGenerationDate;
+        const generationCount = userData.generationCount || 0; // Get the count, default to 0
 
         if (!lastGeneration) {
-            return true;
+          return true;
         }
+
 
         const now = new Date();
         const last = new Date(lastGeneration);
         const diffInMilliseconds = now - last;
         const diffInHours = diffInMilliseconds / (1000 * 60 * 60);
 
-        return diffInHours >= 24;
+        if (diffInHours >= 24) {
+            return true; // Allow generation, it's been 24 hours.
+        } else {
+            // Check if the user has exceeded the daily limit (even within 24 hours)
+            return generationCount < 1; // Limit to 1 generation per day
+        }
 
     } else {
         return true; // New user, allow generation
@@ -47,12 +54,34 @@ async function updateLastGenerationDate(userId) {
     const now = new Date();
 
     if (userDocSnap.exists()) {
-        await updateDoc(userDocRef, {
-            lastGenerationDate: now.getTime()
-        });
+         const userData = userDocSnap.data();
+        const lastGeneration = userData.lastGenerationDate;
+        const generationCount = userData.generationCount || 0; // Ensure we have a count
+
+
+        const last = new Date(lastGeneration);
+        const diffInMilliseconds = now - last;
+        const diffInHours = diffInMilliseconds / (1000 * 60 * 60);
+
+        //Crucial Logic
+        if (diffInHours >= 24) {
+            // Reset the count if it's been more than 24 hours
+            await updateDoc(userDocRef, {
+                lastGenerationDate: now.getTime(),
+                generationCount: 1,  // Reset to 1
+            });
+        } else {
+              // Increment the count if within the 24-hour window
+              await updateDoc(userDocRef, {
+                lastGenerationDate: now.getTime(), // Still update the timestamp
+                generationCount: increment(1), // Increment the count.
+            });
+        }
     } else {
+      //This Case Shouldn't happen with the try catch block in Signup
         await setDoc(userDocRef, {
-            lastGenerationDate: now.getTime()
+            lastGenerationDate: now.getTime(),
+            generationCount: 1, // Start at 1 for new users
         });
     }
 }

@@ -5,14 +5,7 @@
       <div v-for="(template, index) in templates" :key="index"
            @click="selectTemplate(template.name)"
            class="col-md-2 mb-4 template-option"
-           :class="{
-          'border-2': true,
-          'border-primary': selectedTemplate === template.name,
-          'border-light': selectedTemplate !== template.name,
-          'p-2': true,
-          'rounded': true,
-          'cursor-pointer': true,
-        }"
+           :class="{ 'selected': selectedTemplate === template.name }"
       >
         <img :src="template.image" :alt="template.name" class="img-fluid mb-2">
         <p class="text-center">{{ template.name }}</p>

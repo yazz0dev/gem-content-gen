@@ -18,6 +18,7 @@ async function signup(email, password) {
       // Create a user document in Firestore
       await setDoc(doc(db, "users", user.uid), {
           lastGenerationDate: null, // Initialize lastGenerationDate
+          generationCount: 0, // Initialize generation count.  *CRITICAL*
       });
   } catch (error) {
       // Improve error handling

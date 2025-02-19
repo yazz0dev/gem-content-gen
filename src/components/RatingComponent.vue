@@ -3,60 +3,54 @@
     <h2 class="text-2xl font-weight-bold mb-4">Rate the Generated Resume</h2>
     <p class="mb-2">Please rate the following aspects:</p>
 
-    <div class="mb-4">
+    <!-- Content Accuracy -->
+     <div class="mb-4">
       <label class="form-label">Content Accuracy:</label>
       <div class="d-flex">
         <button @click="setRating('contentAccuracy', rating - 1)" v-for="rating in 5" :key="`content-${rating}`"
-          :class="{
-            'text-warning': ratings.contentAccuracy >= rating,
-            'text-muted': ratings.contentAccuracy < rating,
-          }"
-          class="btn btn-link p-0 me-1 fs-4"
-        >
+                :class="getStarClass('contentAccuracy', rating)"
+                class="btn btn-link p-0 me-1 fs-4">
           ★
         </button>
       </div>
       <p v-if="errors.contentAccuracy" class="text-danger small mt-1">{{ errors.contentAccuracy }}</p>
     </div>
 
+    <!-- Formatting -->
     <div class="mb-4">
       <label class="form-label">Formatting:</label>
       <div class="d-flex">
         <button @click="setRating('formatting', rating - 1)" v-for="rating in 5" :key="`format-${rating}`"
-          :class="{
-            'text-warning': ratings.formatting >= rating,
-            'text-muted': ratings.formatting < rating,
-          }"
-          class="btn btn-link p-0 me-1 fs-4"
-        >★</button>
+                :class="getStarClass('formatting', rating)"
+                class="btn btn-link p-0 me-1 fs-4">
+          ★
+        </button>
       </div>
       <p v-if="errors.formatting" class="text-danger small mt-1">{{ errors.formatting }}</p>
     </div>
 
+    <!-- Relevance -->
     <div class="mb-4">
       <label class="form-label">Relevance to Template:</label>
       <div class="d-flex">
         <button @click="setRating('relevance', rating - 1)" v-for="rating in 5" :key="`relevance-${rating}`"
-          :class="{
-            'text-warning': ratings.relevance >= rating,
-            'text-muted': ratings.relevance < rating,
-          }"
-          class="btn btn-link p-0 me-1 fs-4"
-        >★</button>
+                :class="getStarClass('relevance', rating)"
+                class="btn btn-link p-0 me-1 fs-4">
+          ★
+        </button>
       </div>
       <p v-if="errors.relevance" class="text-danger small mt-1">{{ errors.relevance }}</p>
     </div>
 
+    <!-- Overall Quality -->
     <div class="mb-4">
       <label class="form-label">Overall Quality:</label>
       <div class="d-flex">
         <button @click="setRating('overallQuality', rating - 1)" v-for="rating in 5" :key="`overall-${rating}`"
-          :class="{
-            'text-warning': ratings.overallQuality >= rating,
-            'text-muted': ratings.overallQuality < rating,
-          }"
-          class="btn btn-link p-0 me-1 fs-4"
-        >★</button>
+                :class="getStarClass('overallQuality', rating)"
+                class="btn btn-link p-0 me-1 fs-4">
+          ★
+        </button>
       </div>
       <p v-if="errors.overallQuality" class="text-danger small mt-1">{{ errors.overallQuality }}</p>
     </div>
@@ -153,6 +147,13 @@ export default {
       }
     };
 
+    const getStarClass = (category, rating) => {
+      return {
+        'text-warning': ratings[category] >= rating,
+        'text-muted': ratings[category] < rating,
+      };
+    };
+
     return {
       ratings,
       showRating,
@@ -160,8 +161,9 @@ export default {
       submitError,
       setRating,
       closeRating,
-      submitRating: handleSubmitRating,  // Rename to avoid naming conflict.
-      validateRatings
+      submitRating: handleSubmitRating,
+      validateRatings,
+      getStarClass
     };
   }
 };

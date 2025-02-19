@@ -1,4 +1,3 @@
-// /src/components/LeaderboardComponent.vue (Complete and Correct - Logic Moved to firebaseUtils)
 <template>
   <div class="p-4 border rounded shadow-sm bg-white">
     <h2 class="text-2xl font-weight-bold mb-4">Leaderboard</h2>

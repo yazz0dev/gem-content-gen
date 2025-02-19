@@ -1,5 +1,5 @@
 <template>
-  <div class="p-4 border rounded shadow-sm">
+  <div class="p-4 border rounded shadow-sm resume-preview-container">
     <h2 class="text-xl font-weight-bold mb-4">Resume Preview</h2>
     <div v-html="sanitizedResumeHtml" class="resume-preview"></div>
   </div>
