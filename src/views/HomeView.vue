@@ -2,20 +2,8 @@
   <div class="container my-4">
     <h1 class="text-4xl font-weight-bold text-center mb-4">AI Resume Builder</h1>
 
-    <!-- Model Selection -->
-    <div class="mb-4">
-      <h2 class="text-xl font-weight-bold mb-2">Select a Model</h2>
-       <div class="model-selector">
-        <div v-for="model in models" :key="model.name"
-             @click="selectModel(model.name)"
-             class="model-option"
-             :class="{ 'selected': selectedModel === model.name }">
-          <p class="mb-1 font-weight-bold">{{ model.displayName }}</p>
-          <p class="mb-0 text-muted">RPM: {{ model.rpm }}</p>
-          <p class="mb-0 text-muted">TPM: {{ model.tpm }}</p>
-        </div>
-      </div>
-    </div>
+    <!-- Model Selection (Now using ModelSelector component) -->
+      <ModelSelector :models="models" v-model:selectedModel="selectedModel"/>
 
 
     <div v-if="!user">
@@ -51,19 +39,20 @@
 </template>
 
 <script>
-import {ref, computed } from 'vue';
+import {ref, computed, onMounted } from 'vue';
 import ResumeForm from "@/components/ResumeForm.vue";
 import ResumePreview from "@/components/ResumePreview.vue";
 import TemplateSelector from "@/components/TemplateSelector.vue";
 import LoadingSpinner from "@/components/LoadingSpinner.vue";
 import RatingComponent from "@/components/RatingComponent.vue";
 import CustomizationPrompts from "@/components/CustomizationPrompts.vue";
-import AuthForm from "@/components/AuthForm.vue"; 
+import AuthForm from "@/components/AuthForm.vue";
+import ModelSelector from "@/components/ModelSelector.vue"; // Import the new component
 import { generateResume } from '@/utils/generation';
-import { canGenerateResume, updateLastGenerationDate } from '@/utils/firebaseUtils';
+import { canGenerateResume, updateLastGenerationDate, fetchModelRateLimits, checkModelRateLimit } from '@/utils/firebaseUtils';
 import html2pdf from 'html2pdf.js';
-import { auth } from '@/firebase';
-import { useRouter } from 'vue-router'; 
+import {auth } from '@/firebase';
+import { useRouter } from 'vue-router';
 
 
 
@@ -77,17 +66,19 @@ export default {
     RatingComponent,
     CustomizationPrompts,
     AuthForm,
+    ModelSelector, // Add ModelSelector
   },
   setup() {
     const isLoading = ref(false);
     const selectedTemplate = ref("Template 1");
-    const selectedModel = ref("gemini-2.0-pro");
-     const models = ref([
-        { name: 'gemini-2.0-flash-lite-preview-02-05', displayName: 'Gemini 2.0 Flash-Lite', rpm: 30, tpm: 1000000 },
-        { name: 'gemini-2.0-flash', displayName: 'Gemini 2.0 Flash', rpm: 15, tpm: 1000000 },
-        { name: 'gemini-2.0-flash-thinking-exp-01-21', displayName: 'Gemini 2.0 Flash Thinking', rpm: 10, tpm: 4000000 },     
-        { name: 'gemini-2.0-pro-exp-02-05', displayName: 'Gemini 2.0 Pro', rpm: 2, tpm: 1000000 }
-      ]);
+    const selectedModel = ref("gemini-2.0-pro-exp-02-05"); //default
+    const models = ref([
+      // Initial model data (you'll update this with rate limit data)
+       { name: 'gemini-2.0-flash-lite-preview-02-05', displayName: 'Gemini 2.0 Flash-Lite', quality: 'Moderate', speed: 'Fast', isRateLimited: false },
+        { name: 'gemini-2.0-flash', displayName: 'Gemini 2.0 Flash', quality: 'Moderate', speed: 'Fast', isRateLimited: false },
+        { name: 'gemini-2.0-flash-thinking-exp-01-21', displayName: 'Gemini 2.0 Flash Thinking', quality: 'High', speed: 'Moderate', isRateLimited: false },
+        { name: 'gemini-2.0-pro-exp-02-05', displayName: 'Gemini 2.0 Pro', quality: 'Very High', speed: 'Slower', isRateLimited: false }
+    ]);
     const resumeHtml = ref("");
     const resumeData = ref(null); // Store the raw data
     const errorMessage = ref("");
@@ -107,9 +98,7 @@ export default {
       showRating.value = false;
     };
 
-    const selectModel = (modelName) => {
-      selectedModel.value = modelName;
-    }
+
 
     const handlePromptSelected = (prompt) => {
       selectedCustomizationPrompt.value = prompt;
@@ -120,38 +109,45 @@ export default {
     };
 
     const handleGenerateResume = async (data) => {
-      const currentUser = auth.currentUser;
+        const currentUser = auth.currentUser;
+        errorMessage.value = "";
 
-      if (!currentUser) {
-        showAuthModal.value = true;
-        return; // Important: Stop execution here
-      }
+        if (!currentUser) {
+            showAuthModal.value = true;
+            return;
+        }
 
-      const userId = currentUser.uid;
+        const userId = currentUser.uid;
 
-      if (!(await canGenerateResume(userId))) {
-        errorMessage.value = "You have reached the daily limit of 1 resume generation. Please try again tomorrow.";
-        return;
-      }
+        //CHECK USER RATE LIMIT
+        if (!(await canGenerateResume(userId))) {
+            errorMessage.value = "You have reached the daily limit of 1 resume generation. Please try again tomorrow.";
+            return;
+        }
 
-      isLoading.value = true;
-      resumeHtml.value = "";
-      resumeData.value = null; // Clear previous data
-      errorMessage.value = "";
+        //CHECK MODEL RATE LIMIT
+        if (await checkModelRateLimit(selectedModel.value)) {
+            errorMessage.value = "This model is currently rate-limited.  Please select a different model or try again later.";
+            return; // Prevent generation
+        }
 
-      try {
-        const generated = await generateResume(data.formData, data.selectedTemplate, selectedCustomizationPrompt.value, selectedModel.value);
-        resumeHtml.value = generated.html;
-        resumeData.value = data.formData;  // Store for the preview component.
-        await updateLastGenerationDate(userId);
-        showRating.value = true;
+        isLoading.value = true;
+        resumeHtml.value = "";
+        resumeData.value = null;
 
-      } catch (error) {
-        errorMessage.value = error.message; // Use the error message.
-      } finally {
-        isLoading.value = false;
-      }
+        try {
+            const generated = await generateResume(data.formData, data.selectedTemplate, selectedCustomizationPrompt.value, selectedModel.value);
+            resumeHtml.value = generated.html;
+            resumeData.value = data.formData;
+            await updateLastGenerationDate(userId);
+            showRating.value = true;
+        } catch (error) {
+            errorMessage.value = error.message;
+        } finally {
+            isLoading.value = false;
+        }
     };
+
 
     const downloadResume = () => {
       const element = document.createElement('div');
@@ -177,6 +173,14 @@ export default {
       showRating.value = false;
     };
 
+      onMounted(async () => {
+        try {
+//ok
+        } catch (error) {
+          errorMessage.value = error.message; // Display error if fetching fails
+        }
+      });
+
     return {
       isLoading,
       selectedTemplate,
@@ -188,9 +192,8 @@ export default {
       showRating,
       selectedCustomizationPrompt,
       showAuthModal,
-      user, 
+      user,
       handleTemplateSelection,
-      selectModel,
       handlePromptSelected,
       handlePromptCleared,
       handleGenerateResume,

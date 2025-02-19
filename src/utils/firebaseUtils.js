@@ -1,5 +1,5 @@
 import { db } from '@/firebase';
-import { doc, getDoc, setDoc, updateDoc, collection, getDocs, increment, query, where } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, collection, getDocs, increment, runTransaction  } from 'firebase/firestore';
 
 async function isAdmin(userId) {
     try {
@@ -138,5 +138,70 @@ async function fetchLeaderboardData() {
         throw new Error("Failed to load leaderboard data."); // Consistent error handling
     }
 }
+async function fetchModelRateLimits() {
+  try {
+      const rateLimits = {};
+      const querySnapshot = await getDocs(collection(db, 'modelRateLimits'));
+      querySnapshot.forEach((doc) => {
+          rateLimits[doc.id] = doc.data();
+      });
+      return rateLimits;
+  } catch (error) {
+      console.error("Error fetching model rate limits:", error);
+      throw new Error("Failed to load model rate limits."); // Consistent error handling
+  }
+}
 
-export { isAdmin, canGenerateResume, updateLastGenerationDate, submitModelRating, fetchLeaderboardData };
+
+async function checkModelRateLimit(modelName) {
+  const modelRef = doc(db, 'modelRateLimits', modelName);
+
+  try {
+      const result = await runTransaction(db, async (transaction) => {
+          const modelDoc = await transaction.get(modelRef);
+          if (!modelDoc.exists()) {
+            throw new Error("Model Rate Limit Doesn't Exist")
+          }
+
+          const data = modelDoc.data();
+          const now = Date.now();
+          const oneMinute = 60 * 1000;
+          const oneDay = 24 * 60 * oneMinute;
+
+          // Reset RPM if a minute has passed
+          if (now - data.lastResetTime >= oneMinute) {
+              data.currentRPM = 0;
+          }
+
+          // Reset TPM if a day has passed
+          if (now - data.lastResetTime >= oneDay) {
+              data.currentTPM = 0;
+              data.lastResetTime = now;  //Update for next cycle
+          }
+
+          // Check rate limits
+          if (data.currentRPM >= data.rpmLimit || data.currentTPM >= data.tpmLimit) {
+              return true; // Rate limited
+          }
+
+          // Increment usage (within the transaction)
+          transaction.update(modelRef, {
+              currentRPM: increment(1),
+              currentTPM: increment(1),  //increment by one for now, change if needed
+              lastResetTime: now //always reset the time.
+          });
+
+          return false; // Not rate limited
+      });
+      return result
+  } catch (error) {
+      console.error("Error checking model rate limit:", error);
+       if (error.message.includes("Model Rate Limit Doesn't Exist")) {
+          throw new Error("Model Rate Limit Configuration Not Found");
+       }
+      throw new Error("Failed to check model rate limit. Please try again.");
+  }
+}
+
+
+export { isAdmin, canGenerateResume, updateLastGenerationDate, submitModelRating, fetchLeaderboardData, fetchModelRateLimits, checkModelRateLimit };
