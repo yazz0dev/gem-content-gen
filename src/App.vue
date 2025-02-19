@@ -1,14 +1,11 @@
-// /src/App.vue (Complete and Correct)
 <template>
   <div id="app" class="bg-light min-vh-100">
     <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
       <div class="container">
         <RouterLink to="/" class="navbar-brand">Resume Builder</RouterLink>
         <div class="navbar-nav">
-          <RouterLink v-if="!user" to="/login" class="nav-link">Login</RouterLink>
-          <RouterLink v-if="!user" to="/signup" class="nav-link">Sign Up</RouterLink>
           <RouterLink v-if="user" to="/leaderboard" class="nav-link">Leaderboard</RouterLink>
-          <button v-if="user" @click="signOut" class="btn btn-link nav-link">Sign Out</button>
+          <button v-if="user" @click="handleSignOut" class="btn btn-link nav-link">Sign Out</button>
         </div>
       </div>
     </nav>
@@ -21,8 +18,10 @@
 
 <script>
 import { RouterView, RouterLink } from 'vue-router';
+import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/firebase';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { signOutUser } from '@/utils/auth'; // Import from the auth module
+import { ref, onMounted } from 'vue';
 
 export default {
   name: 'App',
@@ -30,26 +29,26 @@ export default {
     RouterView,
     RouterLink
   },
-  data() {
-    return {
-      user: null,
-      authLoading: true,
-    };
-  },
-  created() {
-    onAuthStateChanged(auth, (user) => {
-      this.user = user;
-      this.authLoading = false;
+  setup() {
+    const user = ref(null);
+    const authLoading = ref(true);
+
+    onMounted(() => {
+      onAuthStateChanged(auth, (currentUser) => {
+        user.value = currentUser;
+        authLoading.value = false;
+      });
     });
-  },
-  methods: {
-    async signOut() {
+
+    const handleSignOut = async () => {
       try {
-        await signOut(auth);
+        await signOutUser();
       } catch (error) {
         console.error("Sign out error:", error);
       }
-    },
+    };
+
+    return { user, authLoading, handleSignOut };
   }
 };
 </script>

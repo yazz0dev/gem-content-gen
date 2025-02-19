@@ -1,10 +1,7 @@
-// /src/router/index.js (Complete and Correct)
-// /src/router/index.js
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
-import LoginForm from '@/components/LoginForm.vue';
-import SignupForm from '@/components/SignupForm.vue';
-import LeaderboardComponent from '@/components/LeaderboardComponent.vue'; // Import
+import LeaderboardComponent from '@/components/LeaderboardComponent.vue';
+import AuthForm from '@/components/AuthForm.vue'; 
 import { auth } from '@/firebase';
 
 const routes = [
@@ -12,23 +9,17 @@ const routes = [
     path: '/',
     name: 'home',
     component: HomeView,
-    meta: { requiresAuth: true }
   },
   {
-    path: '/login',
-    name: 'login',
-    component: LoginForm
+    path: '/auth',
+    name: 'auth',
+    component: AuthForm,
   },
   {
-    path: '/signup',
-    name: 'signup',
-    component: SignupForm
-  },
-    {
     path: '/leaderboard',
     name: 'leaderboard',
     component: LeaderboardComponent,
-     meta: { requiresAuth: true }
+    meta: { requiresAuth: true }
   },
 ];
 
@@ -42,10 +33,10 @@ router.beforeEach((to, from, next) => {
   const currentUser = auth.currentUser;
 
   if (requiresAuth && !currentUser) {
-    next('/login');
+    next('/auth');
   } else {
     next();
   }
 });
 
-export default router
+export default router;

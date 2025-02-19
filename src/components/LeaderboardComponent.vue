@@ -1,4 +1,4 @@
-// /src/components/LeaderboardComponent.vue (Complete and Correct)
+// /src/components/LeaderboardComponent.vue (Complete and Correct - Logic Moved to firebaseUtils)
 <template>
   <div class="p-4 border rounded shadow-sm bg-white">
     <h2 class="text-2xl font-weight-bold mb-4">Leaderboard</h2>
@@ -36,39 +36,27 @@
 </template>
 
 <script>
-import { db } from '@/firebase';
-import { collection, getDocs } from 'firebase/firestore';
+import { ref, onMounted } from 'vue';
+import { fetchLeaderboardData } from '@/utils/firebaseUtils';
 
 export default {
   name: 'LeaderboardComponent',
-  data() {
-    return {
-      leaderboardData: [],
-      loading: true,
-      error: null,
-    };
-  },
-  async created() {
-    try {
-      const querySnapshot = await getDocs(collection(db, 'modelRatings'));
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        const totalScore = data.contentAccuracy + data.formatting + data.relevance + data.overallQuality;
-        const averageRating = data.count > 0 ? totalScore / (data.count * 4) * 5 : 0; //4 categories
-        this.leaderboardData.push({
-          id: doc.id,
-          averageRating,
-          count: data.count
-        });
-      });
-      // Sort by average rating (descending)
-      this.leaderboardData.sort((a, b) => b.averageRating - a.averageRating);
-    } catch (error) {
-      console.error("Error fetching leaderboard data:", error);
-      this.error = "Failed to load leaderboard data.";
-    } finally {
-      this.loading = false;
-    }
-  },
+  setup() {
+    const leaderboardData = ref([]);
+    const loading = ref(true);
+    const error = ref(null);
+
+    onMounted(async () => {
+      try {
+        leaderboardData.value = await fetchLeaderboardData();
+      } catch (err) {
+        error.value = err.message;  // Use the error message from the utility.
+      } finally {
+        loading.value = false;
+      }
+    });
+
+    return { leaderboardData, loading, error };
+  }
 };
 </script>

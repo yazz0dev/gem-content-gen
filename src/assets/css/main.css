@@ -1,2 +1,45 @@
-
 @import 'bootstrap/dist/css/bootstrap.min.css';
+
+/* General Styles */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f8f9fa; /* Light gray background */
+}
+
+.container {
+  max-width: 1200px; /* Wider container for better layout */
+}
+
+/* Subtle Animations */
+.fade-in {
+  opacity: 0;
+  transition: opacity 0.5s ease-in-out;
+}
+
+.fade-in.active {
+  opacity: 1;
+}
+
+.hover-highlight:hover {
+  background-color: #e9ecef; /* Light gray on hover */
+  transition: background-color 0.2s ease;
+}
+
+/* AuthForm Specific */
+.auth-form {
+  max-width: 450px;
+  margin: auto;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  background-color: white;
+}
+
+/* Template Selector */
+.template-option {
+    transition: transform 0.2s ease;
+}
+.template-option:hover {
+    transform: scale(1.05);
+}

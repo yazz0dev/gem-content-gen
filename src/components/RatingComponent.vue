@@ -72,9 +72,10 @@
 </template>
 
 <script>
-import { db } from '@/firebase';
-import { doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
+import { ref, reactive } from 'vue';
+import { submitModelRating } from '@/utils/firebaseUtils';
 import { auth } from '@/firebase';
+
 
 export default {
   name: 'RatingComponent',
@@ -84,93 +85,84 @@ export default {
       required: true,
     }
   },
-  data() {
-    return {
-      ratings: {
-        contentAccuracy: 0,
-        formatting: 0,
-        relevance: 0,
-        overallQuality: 0,
-      },
-      showRating: true,
-      errors: {},
-      submitError: "",
+  setup(props, { emit }) {
+    const ratings = reactive({
+      contentAccuracy: 0,
+      formatting: 0,
+      relevance: 0,
+      overallQuality: 0,
+    });
+    const showRating = ref(true);
+    const errors = reactive({});
+    const submitError = ref("");
+
+
+    const setRating = (category, value) => {
+      ratings[category] = value + 1;
     };
-  },
-  methods: {
-    setRating(category, value) {
-      this.ratings[category] = value + 1;
-    },
-    closeRating() {
-      this.showRating = false; //Hides Component
-      this.$emit('rating-closed');
-    },
-    validateRatings() {
-      this.errors = {};
+
+
+    const closeRating = () => {
+      showRating.value = false; //Hides Component
+      emit('rating-closed');
+    };
+
+
+    const validateRatings = () => {
+      Object.keys(errors).forEach(key => delete errors[key]); // Clear previous errors
       let isValid = true;
 
-      if (this.ratings.contentAccuracy === 0) {
-        this.errors.contentAccuracy = 'Please rate content accuracy.';
+      if (ratings.contentAccuracy === 0) {
+        errors.contentAccuracy = 'Please rate content accuracy.';
         isValid = false;
       }
-      if (this.ratings.formatting === 0) {
-        this.errors.formatting = 'Please rate formatting.';
+      if (ratings.formatting === 0) {
+        errors.formatting = 'Please rate formatting.';
         isValid = false;
       }
-      if (this.ratings.relevance === 0) {
-        this.errors.relevance = 'Please rate relevance.';
+      if (ratings.relevance === 0) {
+        errors.relevance = 'Please rate relevance.';
         isValid = false;
       }
-      if (this.ratings.overallQuality === 0) {
-        this.errors.overallQuality = 'Please rate Overall Quality.';
+      if (ratings.overallQuality === 0) {
+        errors.overallQuality = 'Please rate Overall Quality.';
         isValid = false;
       }
 
       return isValid;
-    },
-    async submitRating() {
-      if (!this.validateRatings()) {
+    };
+
+    const handleSubmitRating = async () => {
+      if (!validateRatings()) {
         return;
       }
 
-      this.submitError = ""; // Reset error
+      submitError.value = ""; // Reset error
       const user = auth.currentUser;
       if (!user) {
-        this.submitError = "You must be logged in to submit a rating.";
+        submitError.value = "You must be logged in to submit a rating.";
         return;
       }
 
       try {
-        const modelRef = doc(db, 'modelRatings', this.modelName);
-        const modelDoc = await getDoc(modelRef);
-
-        if (modelDoc.exists()) {
-          // Update existing document
-          await updateDoc(modelRef, {
-            contentAccuracy: increment(this.ratings.contentAccuracy),
-            formatting: increment(this.ratings.formatting),
-            relevance: increment(this.ratings.relevance),
-            overallQuality: increment(this.ratings.overallQuality),
-            count: increment(1),
-          });
-        } else {
-          // Create the document if it doesn't exist
-          await setDoc(modelRef, {
-            contentAccuracy: this.ratings.contentAccuracy,
-            formatting: this.ratings.formatting,
-            relevance: this.ratings.relevance,
-            overallQuality: this.ratings.overallQuality,
-            count: 1,
-          });
-        }
-        this.showRating = false;
-        this.$emit('rating-submitted');
-
+        await submitModelRating(props.modelName, ratings);
+        showRating.value = false;
+        emit('rating-submitted');
       } catch (error) {
-        console.error("Error submitting rating:", error);
-        this.submitError = 'Failed to submit rating. Please try again.';
+        submitError.value = error.message; // Use error message from utility.
       }
-    },
-  },
+    };
+
+    return {
+      ratings,
+      showRating,
+      errors,
+      submitError,
+      setRating,
+      closeRating,
+      submitRating: handleSubmitRating,  // Rename to avoid naming conflict.
+      validateRatings
+    };
+  }
 };
 </script>

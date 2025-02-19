@@ -1,4 +1,4 @@
-// /src/main.js (Complete and Correct)
+// /src/main.js (Unchanged)
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'

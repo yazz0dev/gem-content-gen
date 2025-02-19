@@ -1,4 +1,4 @@
-// /src/components/CustomizationPrompts.vue (Complete and Correct)
+// Unchanged - The logic and structure are fine as they are.
 <template>
   <div class="p-4 border rounded shadow-sm bg-white mb-4">
     <h2 class="text-2xl font-weight-bold mb-4">Customize Your Resume (Optional)</h2>

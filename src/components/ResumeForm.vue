@@ -1,26 +1,27 @@
-// /src/components/ResumeForm.vue
 <template>
   <div class="p-4 border rounded shadow-sm bg-white">
     <h2 class="text-2xl font-weight-bold mb-4">Resume Information</h2>
     <p class="text-muted mb-4">Fill in the details below to generate your resume.</p>
 
     <form @submit.prevent="handleSubmit" class="mb-3">
+      <!-- Personal Information -->
       <div class="row g-4">
         <div class="col-md-6">
           <label for="name" class="form-label">Full Name <span class="text-danger">*</span></label>
-          <input type="text" id="name" v-model="formData.name" required class="form-control">
+          <input type="text" id="name" v-model="formData.name" required class="form-control" @input="validateField('name')">
           <p v-if="errors.name" class="text-danger mt-1 small">{{ errors.name }}</p>
         </div>
 
         <div class="col-md-6">
           <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
-          <input type="email" id="email" v-model="formData.email" required class="form-control">
+          <input type="email" id="email" v-model="formData.email" required class="form-control" @input="validateField('email')">
           <p v-if="errors.email" class="text-danger mt-1 small">{{ errors.email }}</p>
         </div>
 
         <div class="col-md-6">
           <label for="phone" class="form-label">Phone Number</label>
-          <input type="tel" id="phone" v-model="formData.phone" class="form-control">
+          <input type="tel" id="phone" v-model="formData.phone" class="form-control" @input="validateField('phone')">
+           <p v-if="errors.phone" class="text-danger mt-1 small">{{ errors.phone }}</p>
         </div>
 
         <div class="col-md-6">
@@ -40,10 +41,11 @@
 
       <div class="mb-3">
         <label for="summary" class="form-label">Summary <span class="text-danger">*</span></label>
-        <textarea id="summary" v-model="formData.summary" required rows="4" class="form-control"></textarea>
+        <textarea id="summary" v-model="formData.summary" required rows="4" class="form-control" @input="validateField('summary')"></textarea>
         <p v-if="errors.summary" class="text-danger mt-1 small">{{ errors.summary }}</p>
       </div>
 
+     <!-- Work Experience -->
       <div class="border-top pt-4">
         <h3 class="text-lg font-weight-bold mb-3">Work Experience</h3>
         <div v-for="(experience, index) in formData.workExperience" :key="index" class="mb-4 pb-4 border-bottom">
@@ -51,27 +53,27 @@
           <div class="row g-4">
             <div class="col-md-6">
               <label :for="`company-${index}`" class="form-label">Company Name <span class="text-danger">*</span></label>
-              <input type="text" :id="`company-${index}`" v-model="experience.company" required class="form-control">
-              <p v-if="errors[`company-${index}`]" class="text-danger mt-1 small">{{ errors[`company-${index}`] }}</p>
+              <input type="text" :id="`company-${index}`" v-model="experience.company" required class="form-control" @input="validateField(`workExperience.${index}.company`)">
+              <p v-if="errors[`workExperience.${index}.company`]" class="text-danger mt-1 small">{{ errors[`workExperience.${index}.company`] }}</p>
             </div>
             <div class="col-md-6">
               <label :for="`jobTitle-${index}`" class="form-label">Job Title <span class="text-danger">*</span></label>
-              <input type="text" :id="`jobTitle-${index}`" v-model="experience.jobTitle" required class="form-control">
-              <p v-if="errors[`jobTitle-${index}`]" class="text-danger mt-1 small">{{ errors[`jobTitle-${index}`] }}</p>
+              <input type="text" :id="`jobTitle-${index}`" v-model="experience.jobTitle" required class="form-control" @input="validateField(`workExperience.${index}.jobTitle`)">
+              <p v-if="errors[`workExperience.${index}.jobTitle`]" class="text-danger mt-1 small">{{ errors[`workExperience.${index}.jobTitle`] }}</p>
             </div>
 
           </div>
           <div class="row g-4 mt-2">
             <div class="col-md-6">
               <label :for="`startDate-${index}`" class="form-label">Start Date <span class="text-danger">*</span></label>
-              <input type="date" :id="`startDate-${index}`" v-model="experience.startDate" required class="form-control">
-              <p v-if="errors[`startDate-${index}`]" class="text-danger mt-1 small">{{ errors[`startDate-${index}`] }}</p>
+              <input type="date" :id="`startDate-${index}`" v-model="experience.startDate" required class="form-control" @input="validateField(`workExperience.${index}.startDate`)">
+              <p v-if="errors[`workExperience.${index}.startDate`]" class="text-danger mt-1 small">{{ errors[`workExperience.${index}.startDate`] }}</p>
             </div>
             <div class="col-md-6">
-              <label :for="`endDate-${index}`" class="form-label">End Date <span class="text-danger">*</span></label>
+              <label :for="`endDate-${index}`" class="form-label">End Date</label>
               <input type="date" :id="`endDate-${index}`" v-model="experience.endDate" :required="!experience.current"
-                class="form-control">
-              <p v-if="errors[`endDate-${index}`]" class="text-danger mt-1 small">{{ errors[`endDate-${index}`] }}</p>
+                class="form-control" @input="validateField(`workExperience.${index}.endDate`)">
+              <p v-if="errors[`workExperience.${index}.endDate`]" class="text-danger mt-1 small">{{ errors[`workExperience.${index}.endDate`] }}</p>
 
               <div class="form-check mt-1">
                 <input type="checkbox" :id="`current-${index}`" v-model="experience.current" class="form-check-input">
@@ -84,15 +86,15 @@
             <label :for="`responsibilities-${index}`" class="form-label">Responsibilities <span
                 class="text-danger">*</span></label>
             <textarea :id="`responsibilities-${index}`" v-model="experience.responsibilities" required rows="3"
-              class="form-control"></textarea>
-            <p v-if="errors[`responsibilities-${index}`]" class="text-danger mt-1 small">
-              {{ errors[`responsibilities-${index}`] }}</p>
+              class="form-control" @input="validateField(`workExperience.${index}.responsibilities`)"></textarea>
+            <p v-if="errors[`workExperience.${index}.responsibilities`]" class="text-danger mt-1 small">
+              {{ errors[`workExperience.${index}.responsibilities`] }}</p>
           </div>
           <button type="button" @click="removeExperience(index)" class="btn btn-outline-danger">Remove Experience</button>
         </div>
         <button type="button" @click="addExperience" class="btn btn-outline-primary">Add Experience</button>
       </div>
-
+      <!-- Education -->
       <div class="border-top pt-4">
         <h3 class="text-lg font-weight-bold mb-3">Education</h3>
         <div v-for="(education, index) in formData.education" :key="index" class="mb-4 pb-4 border-bottom">
@@ -101,14 +103,14 @@
               <label :for="`institution-${index}`" class="form-label">Institution Name <span
                   class="text-danger">*</span></label>
               <input :id="`institution-${index}`" type="text" v-model="education.institution" required
-                class="form-control">
-              <p v-if="errors[`institution-${index}`]" class="text-danger mt-1 small">
-                {{ errors[`institution-${index}`] }}</p>
+                class="form-control" @input="validateField(`education.${index}.institution`)">
+              <p v-if="errors[`education.${index}.institution`]" class="text-danger mt-1 small">
+                {{ errors[`education.${index}.institution`] }}</p>
             </div>
             <div class="col-md-6">
               <label :for="`degree-${index}`" class="form-label">Degree <span class="text-danger">*</span></label>
-              <input :id="`degree-${index}`" type="text" v-model="education.degree" required class="form-control">
-              <p v-if="errors[`degree-${index}`]" class="text-danger mt-1 small">{{ errors[`degree-${index}`] }}</p>
+              <input :id="`degree-${index}`" type="text" v-model="education.degree" required class="form-control" @input="validateField(`education.${index}.degree`)">
+              <p v-if="errors[`education.${index}.degree`]" class="text-danger mt-1 small">{{ errors[`education.${index}.degree`] }}</p>
             </div>
           </div>
           <div class="row g-4 mt-2">
@@ -116,22 +118,23 @@
               <label :for="`eduStartDate-${index}`" class="form-label">Start Date <span
                   class="text-danger">*</span></label>
               <input :id="`eduStartDate-${index}`" type="date" v-model="education.startDate" required
-                class="form-control">
-              <p v-if="errors[`eduStartDate-${index}`]" class="text-danger mt-1 small">
-                {{ errors[`eduStartDate-${index}`] }}</p>
+                class="form-control" @input="validateField(`education.${index}.startDate`)">
+              <p v-if="errors[`education.${index}.startDate`]" class="text-danger mt-1 small">
+                {{ errors[`education.${index}.startDate`] }}
+              </p>  <!-- Corrected: Added closing </p> tag here -->
             </div>
             <div class="col-md-6">
               <label :for="`eduEndDate-${index}`" class="form-label">End Date</label>
-              <input :id="`eduEndDate-${index}`" type="date" v-model="education.endDate" class="form-control">
-              <p v-if="errors[`eduEndDate-${index}`]" class="text-danger mt-1 small">{{ errors[`eduEndDate-${index}`] }}
+              <input :id="`eduEndDate-${index}`" type="date" v-model="education.endDate" class="form-control" @input="validateField(`education.${index}.endDate`)">
+              <p v-if="errors[`education.${index}.endDate`]" class="text-danger mt-1 small">{{ errors[`education.${index}.endDate`] }}
               </p>
               <div class="form-check mt-1">
                 <input type="checkbox" :id="`eduCurrent-${index}`" v-model="education.current" class="form-check-input">
                 <label :for="`eduCurrent-${index}`" class="form-check-label">I currently study here</label>
               </div>
             </div>
+          </div>  <!-- Corrected: Added closing </div> tag here -->
 
-          </div>
           <div class="row g-4 mt-2">
             <div class="col-md-6">
               <label :for="`eduMajor-${index}`" class="form-label">Major</label>
@@ -146,7 +149,7 @@
         </div>
         <button type="button" @click="addEducation" class="btn btn-outline-primary">Add Education</button>
       </div>
-
+      <!-- Skills -->
       <div class="border-top pt-4">
         <h3 class="text-lg font-weight-bold mb-3">Skills</h3>
         <div class="mb-3">
@@ -174,6 +177,10 @@
 </template>
 
 <script>
+import { reactive, ref } from 'vue';
+import { validateResumeForm, validateField as validateSingleField } from '@/utils/validation';
+
+
 export default {
   name: 'ResumeForm',
   props: {
@@ -182,27 +189,25 @@ export default {
       required: true,
     },
   },
-  data() {
-    return {
-      formData: {
-        name: '',
-        email: '',
-        phone: '',
-        linkedin: '',
-        github: '',
-        portfolio: '',
-        summary: '',
-        workExperience: [],
-        education: [],
-        skills: [],
-      },
-      newSkill: '',
-      errors: {}, // Store validation errors
-    };
-  },
-  methods: {
-    addExperience() {
-      this.formData.workExperience.push({
+  setup(props, { emit }) {
+    const formData = reactive({
+      name: '',
+      email: '',
+      phone: '',
+      linkedin: '',
+      github: '',
+      portfolio: '',
+      summary: '',
+      workExperience: [],
+      education: [],
+      skills: [],
+    });
+
+    const newSkill = ref('');
+    const errors = reactive({});
+
+    const addExperience = () => {
+      formData.workExperience.push({
         company: '',
         jobTitle: '',
         startDate: '',
@@ -210,20 +215,16 @@ export default {
         current: false,
         responsibilities: '',
       });
-    },
-    removeExperience(index) {
-      this.formData.workExperience.splice(index, 1);
-      // Clear related errors when removing an experience
-      Object.keys(this.errors).forEach(key => {
-        if (key.startsWith(`company-${index}`) || key.startsWith(`jobTitle-${index}`) ||
-            key.startsWith(`startDate-${index}`) || key.startsWith(`endDate-${index}`) ||
-            key.startsWith(`responsibilities-${index}`)) {
-          delete this.errors[key];
-        }
-      });
-    },
-    addEducation() {
-      this.formData.education.push({
+    };
+
+    const removeExperience = (index) => {
+      formData.workExperience.splice(index, 1);
+      // Clear related errors
+      clearNestedErrors(`workExperience.${index}`);
+    };
+
+    const addEducation = () => {
+      formData.education.push({
         institution: '',
         degree: '',
         startDate: '',
@@ -232,114 +233,81 @@ export default {
         major: '',
         minor: ''
       });
-    },
-    removeEducation(index) {
-      this.formData.education.splice(index, 1);
-      // Clear related errors
-      Object.keys(this.errors).forEach(key => {
-        if (key.startsWith(`institution-${index}`) || key.startsWith(`degree-${index}`) ||
-            key.startsWith(`eduStartDate-${index}`) || key.startsWith(`eduEndDate-${index}`)) {
-          delete this.errors[key];
-        }
-      });
-    },
-    addSkill() {
-      if (this.newSkill.trim() !== '') {
-        this.formData.skills.push(this.newSkill.trim());
-        this.newSkill = '';
-      }
-    },
-    removeSkill(index) {
-      this.formData.skills.splice(index, 1);
-    },
-    validateForm() {
-      this.errors = {}; // Reset errors
-      let isValid = true;
+    };
 
-      if (!this.formData.name.trim()) {
-        this.errors.name = 'Name is required.';
-        isValid = false;
-      }
-      if (!this.formData.email.trim()) {
-        this.errors.email = 'Email is required.';
-        isValid = false;
-      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.formData.email)) {
-        this.errors.email = 'Invalid email format.';
-        isValid = false;
-      }
+    const removeEducation = (index) => {
+      formData.education.splice(index, 1);
+       // Clear related errors
+      clearNestedErrors(`education.${index}`);
+    };
 
-      if (!this.formData.summary.trim()) {
-        this.errors.summary = "Summary is required";
-        isValid = false
+    const addSkill = () => {
+      if (newSkill.value.trim() !== '') {
+        formData.skills.push(newSkill.value.trim());
+        newSkill.value = '';
       }
-      // Add more validation rules as needed (e.g., phone number format)
+    };
 
-      // Work Experience Validation
-      this.formData.workExperience.forEach((experience, index) => {
-        if (!experience.company.trim()) {
-          this.errors[`company-${index}`] = 'Company name is required.';
-          isValid = false;
-        }
-        if (!experience.jobTitle.trim()) {
-          this.errors[`jobTitle-${index}`] = 'Job title is required.';
-          isValid = false;
-        }
-        if (!experience.startDate) {
-          this.errors[`startDate-${index}`] = 'Start date is required.';
-          isValid = false;
-        }
-        if (!experience.current && !experience.endDate) {
-          this.errors[`endDate-${index}`] = 'End date is required.';
-          isValid = false;
-        }
-        if (experience.startDate && experience.endDate && !experience.current) {
-          if (new Date(experience.startDate) > new Date(experience.endDate)) {
-            this.errors[`endDate-${index}`] = 'End date must be after start date.';
-            isValid = false;
+    const removeSkill = (index) => {
+      formData.skills.splice(index, 1);
+    };
+
+      const clearNestedErrors = (prefix) => {
+        Object.keys(errors)
+          .filter(key => key.startsWith(prefix))
+          .forEach(key => delete errors[key]);
+    };
+
+    const validateForm = () => {
+      Object.keys(errors).forEach(key => delete errors[key]); // Clear previous errors.
+      const validationErrors = validateResumeForm(formData);
+      Object.assign(errors, validationErrors); // Update the errors object.
+      return Object.keys(errors).length === 0; // Return true if no errors.
+    };
+
+      const validateField = (field) => {
+        const fieldParts = field.split('.');
+        let fieldValue = formData;
+        for (const part of fieldParts) {
+          if (!isNaN(parseInt(part))) { // Check if part is a number (array index)
+            fieldValue = fieldValue[parseInt(part)];
+          } else {
+            fieldValue = fieldValue[part];
           }
-        }
-        if (!experience.responsibilities.trim()) {
-          this.errors[`responsibilities-${index}`] = "Responsibilities are required";
-          isValid = false;
-        }
-      });
 
-      // Education Validation
-      this.formData.education.forEach((education, index) => {
-        if (!education.institution.trim()) {
-          this.errors[`institution-${index}`] = 'Institution name is required.';
-          isValid = false;
+          if (fieldValue === undefined) break; // Handle cases where the nested property doesn't exist
         }
-        if (!education.degree.trim()) {
-          this.errors[`degree-${index}`] = "Degree is Required";
-          isValid = false;
-        }
-        if (!education.startDate) {
-          this.errors[`eduStartDate-${index}`] = 'Start date is required.';
-          isValid = false;
-        }
-        if (!education.current && !education.endDate) {
-          this.errors[`eduEndDate-${index}`] = 'End date is required.';
-          isValid = false;
-        }
-        if (education.startDate && education.endDate && !education.current) {
-          if (new Date(education.startDate) > new Date(education.endDate)) {
-            this.errors[`eduEndDate-${index}`] = 'End date must be after start date.';
-            isValid = false;
-          }
-        }
-      });
 
-      return isValid;
-    },
-    handleSubmit() {
-      if (this.validateForm()) {
-        this.$emit('generate-resume', {
-          formData: this.formData,
-          selectedTemplate: this.selectedTemplate,
+        const validationError = validateSingleField(field, fieldValue, formData);
+        if (validationError) {
+          errors[field] = validationError;
+        } else {
+          delete errors[field];  //Remove Error
+        }
+    };
+
+    const handleSubmit = () => {
+      if (validateForm()) {
+        emit('generate-resume', {
+          formData: formData,
+          selectedTemplate: props.selectedTemplate,
         });
       }
-    },
+    };
+
+    return {
+      formData,
+      newSkill,
+      errors,
+      addExperience,
+      removeExperience,
+      addEducation,
+      removeEducation,
+      addSkill,
+      removeSkill,
+      handleSubmit,
+      validateField,
+    };
   },
 };
 </script>
