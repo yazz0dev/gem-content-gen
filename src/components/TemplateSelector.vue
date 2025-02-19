@@ -4,10 +4,11 @@
     <div class="row">
       <div v-for="(template, index) in templates" :key="index"
            @click="selectTemplate(template.name)"
-           class="col-md-2 mb-4 template-option"
+           class="col-md-3 mb-4 template-option"
            :class="{ 'selected': selectedTemplate === template.name }"
       >
-        <img :src="template.image" :alt="template.name" class="img-fluid mb-2">
+        <!-- Larger, more descriptive placeholder images -->
+        <img :src="template.image" :alt="template.name" class="img-fluid mb-2 rounded">
         <p class="text-center">{{ template.name }}</p>
       </div>
     </div>
@@ -21,11 +22,12 @@ export default {
   data() {
     return {
       templates: [
-        { name: 'Template 1', image: 'https://via.placeholder.com/150' },
-        { name: 'Template 2', image: 'https://via.placeholder.com/150' },
-        { name: 'Template 3', image: 'https://via.placeholder.com/150' },
-        { name: 'Template 4', image: 'https://via.placeholder.com/150' },
-        { name: 'Template 5', image: 'https://via.placeholder.com/150' },
+        // Use larger placeholder images for better preview
+        { name: 'Template 1', image: 'https://via.placeholder.com/300x400' },
+        { name: 'Template 2', image: 'https://via.placeholder.com/300x400' },
+        { name: 'Template 3', image: 'https://via.placeholder.com/300x400' },
+        { name: 'Template 4', image: 'https://via.placeholder.com/300x400' },
+        { name: 'Template 5', image: 'https://via.placeholder.com/300x400' },
         // Add more templates here
       ],
       selectedTemplate: 'Template 1', // Default template

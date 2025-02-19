@@ -1,16 +1,17 @@
+/* src/assets/css/main.css */
 @import 'bootstrap/dist/css/bootstrap.min.css';
 
 /* General Styles */
 body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #f8f9fa; /* Light gray background */
+  font-family: 'Inter', sans-serif; /* Modern font */
+  background-color: #f8f9fa;
 }
 
 .container {
-  max-width: 1200px; /* Wider container for better layout */
+  max-width: 1200px;
 }
 
-/* Subtle Animations */
+/* Subtle Animations (Keep these) */
 .fade-in {
   opacity: 0;
   transition: opacity 0.5s ease-in-out;
@@ -21,7 +22,7 @@ body {
 }
 
 .hover-highlight:hover {
-  background-color: #e9ecef; /* Light gray on hover */
+  background-color: #e9ecef;
   transition: background-color 0.2s ease;
 }
 
@@ -39,26 +40,29 @@ body {
 /* Template Selector */
 .template-option {
     transition: transform 0.2s ease;
-    cursor: pointer; /* Make sure the cursor indicates clickability */
-    border: 2px solid transparent; /* Default transparent border */
-    border-radius: 0.25rem; /* Match Bootstrap's rounded corners */
-    padding: 0.5rem; /* Add some padding */
+    cursor: pointer;
+    border: 2px solid transparent;
+    border-radius: 0.25rem;
+    padding: 0.5rem;
+    /* Improve visuals */
+    overflow: hidden; /* For rounded corners on images */
 }
 
 .template-option:hover {
     transform: scale(1.05);
-    border-color: #0d6efd; /* Bootstrap primary color on hover */
+    border-color: #0d6efd;
 }
 
 .template-option.selected {
-    border-color: #0d6efd; /* Bootstrap primary color for selected */
+    border-color: #0d6efd;
 }
 
-/* Model Selector */
+
+/* Model Selector (Keep and adjust as needed) */
 .model-selector {
   display: flex;
-  flex-wrap: wrap; /* Allow wrapping on smaller screens */
-  gap: 1rem; /* Spacing between model options */
+  flex-wrap: wrap;
+  gap: 1rem;
   margin-bottom: 1rem;
 }
 
@@ -69,15 +73,15 @@ body {
   cursor: pointer;
   background-color: white;
   transition: background-color 0.2s ease, border-color 0.2s ease;
+  /* Additional styling for better visual appearance */
+  text-align: center;
+  width: 150px; /* Or use a percentage for responsiveness */
 }
 
 .model-option:hover,
 .model-option.selected {
-  border-color: #0d6efd; /* Bootstrap primary color on hover/select */
+  border-color: #0d6efd;
   background-color: #e9ecef;
-}
-.model-option.selected{
-   border-color: #0d6efd; /* Bootstrap primary color on hover/select */
 }
 
 /* Resume Preview */
@@ -86,5 +90,33 @@ body {
   border-radius: 0.25rem;
   padding: 1rem;
   background-color: white;
-  margin-bottom: 1rem; /* Space before buttons */
+  margin-bottom: 1rem;
+}
+
+/* Additions for a more modern look */
+h1, h2, h3 {
+  font-weight: 700; /* Bolder headings */
+}
+
+.btn-primary {
+  background-color: #0d6efd; /* Bootstrap primary color */
+  border-color: #0d6efd;
+}
+
+.btn-primary:hover {
+  background-color: #0b5ed7; /* Darker shade on hover */
+  border-color: #0b5ed7;
+}
+
+.btn-secondary {
+  background-color: #6c757d;
+  border-color: #6c757d;
+}
+
+.btn-secondary:hover {
+  background-color: #5a6268;
+  border-color: #545b62;
+}
+.model-option.selected{
+     border-color: #0d6efd; /* Bootstrap primary color on hover/select */
 }
