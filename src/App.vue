@@ -1,7 +1,7 @@
 <template>
   <div id="app" class="bg-light min-vh-100">
     <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
-      <div class="container">
+      <div class="container py-2">
         <RouterLink to="/" class="navbar-brand">Resume Builder</RouterLink>
         <div class="navbar-nav">
           <RouterLink v-if="user" to="/leaderboard" class="nav-link">Leaderboard</RouterLink>

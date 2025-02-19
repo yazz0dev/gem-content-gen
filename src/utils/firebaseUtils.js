@@ -153,55 +153,30 @@ async function fetchModelRateLimits() {
 }
 
 
-async function checkModelRateLimit(modelName) {
-  const modelRef = doc(db, 'modelRateLimits', modelName);
-
+export const checkModelRateLimit = async (modelName) => {
   try {
-      const result = await runTransaction(db, async (transaction) => {
-          const modelDoc = await transaction.get(modelRef);
-          if (!modelDoc.exists()) {
-            throw new Error("Model Rate Limit Doesn't Exist")
-          }
+    const rateLimitRef = doc(db, 'modelRateLimits', modelName);
+    const rateLimitDoc = await getDoc(rateLimitRef);
 
-          const data = modelDoc.data();
-          const now = Date.now();
-          const oneMinute = 60 * 1000;
-          const oneDay = 24 * 60 * oneMinute;
+    if (!rateLimitDoc.exists()) {
+      return false; // If no rate limit document exists, assume not rate limited
+    }
 
-          // Reset RPM if a minute has passed
-          if (now - data.lastResetTime >= oneMinute) {
-              data.currentRPM = 0;
-          }
+    const { lastReset, requestCount, maxRequests } = rateLimitDoc.data();
+    const now = new Date().getTime();
+    const resetWindow = 1000 * 60 * 60; // 1 hour in milliseconds
 
-          // Reset TPM if a day has passed
-          if (now - data.lastResetTime >= oneDay) {
-              data.currentTPM = 0;
-              data.lastResetTime = now;  //Update for next cycle
-          }
+    // If the window has expired, return false (not rate limited)
+    if (now - lastReset > resetWindow) {
+      return false;
+    }
 
-          // Check rate limits
-          if (data.currentRPM >= data.rpmLimit || data.currentTPM >= data.tpmLimit) {
-              return true; // Rate limited
-          }
-
-          // Increment usage (within the transaction)
-          transaction.update(modelRef, {
-              currentRPM: increment(1),
-              currentTPM: increment(1),  //increment by one for now, change if needed
-              lastResetTime: now //always reset the time.
-          });
-
-          return false; // Not rate limited
-      });
-      return result
+    // Return true if rate limited, false otherwise
+    return requestCount >= maxRequests;
   } catch (error) {
-      console.error("Error checking model rate limit:", error);
-       if (error.message.includes("Model Rate Limit Doesn't Exist")) {
-          throw new Error("Model Rate Limit Configuration Not Found");
-       }
-      throw new Error("Failed to check model rate limit. Please try again.");
+    console.error('Error checking model rate limit:', error);
+    return false; // Default to not rate limited on error
   }
-}
+};
 
-
-export { isAdmin, canGenerateResume, updateLastGenerationDate, submitModelRating, fetchLeaderboardData, fetchModelRateLimits, checkModelRateLimit };
+export { isAdmin, canGenerateResume, updateLastGenerationDate, submitModelRating, fetchLeaderboardData, fetchModelRateLimits };

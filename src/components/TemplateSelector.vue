@@ -5,11 +5,17 @@
       <div v-for="(template, index) in templates" :key="index"
            @click="selectTemplate(template.name)"
            class="col-md-3 mb-4 template-option"
-           :class="{ 'selected': selectedTemplate === template.name }"
+           :class="{ 'selected': selectedTemplate === template.name, 'bg-light': selectedTemplate === template.name}"
       >
         <!-- Larger, more descriptive placeholder images -->
         <img :src="template.image" :alt="template.name" class="img-fluid mb-2 rounded">
         <p class="text-center">{{ template.name }}</p>
+          <!-- Add a checkmark icon (using Bootstrap Icons) -->
+        <div v-if="selectedTemplate === template.name" class="position-absolute top-0 end-0 p-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check-circle-fill text-success" viewBox="0 0 16 16">
+            <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0m-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+          </svg>
+        </div>
       </div>
     </div>
     <p v-if="selectionError" class="text-danger mt-2">{{ selectionError }}</p>
@@ -17,6 +23,7 @@
 </template>
 
 <script>
+//Same as before
 export default {
   name: 'TemplateSelector',
   data() {
@@ -27,8 +34,6 @@ export default {
         { name: 'Template 2', image: 'https://via.placeholder.com/300x400' },
         { name: 'Template 3', image: 'https://via.placeholder.com/300x400' },
         { name: 'Template 4', image: 'https://via.placeholder.com/300x400' },
-        { name: 'Template 5', image: 'https://via.placeholder.com/300x400' },
-        // Add more templates here
       ],
       selectedTemplate: 'Template 1', // Default template
       selectionError: ''
@@ -54,3 +59,10 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+  /* Add styles for positioning the checkmark */
+.template-option {
+  position: relative; /* For absolute positioning of the checkmark */
+}
+</style>
