@@ -5,11 +5,19 @@
       <div v-for="(template, index) in templates" :key="index"
            @click="selectTemplate(template.name)"
            class="col-md-3 mb-4 template-option"
-           :class="{ 'selected': selectedTemplate === template.name, 'bg-light': selectedTemplate === template.name}"
-      >
-        <!-- Larger, more descriptive placeholder images -->
-        <img :src="template.image" :alt="template.name" class="img-fluid mb-2 rounded">
-        <p class="text-center">{{ template.name }}</p>
+           :class="{ 'selected': selectedTemplate === template.name}">
+        <!--  Apply template CSS class to a container div -->
+        <div :class="template.className" class="template-preview">
+            <div class="p-3">
+                <h3>Example Heading</h3>
+                <p>Some example text.</p>
+                <ul>
+                    <li>List item 1</li>
+                    <li>List item 2</li>
+                </ul>
+            </div>
+        </div>
+        <p class="text-center mt-2">{{ template.name }}</p>
           <!-- Add a checkmark icon (using Bootstrap Icons) -->
         <div v-if="selectedTemplate === template.name" class="position-absolute top-0 end-0 p-2">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check-circle-fill text-success" viewBox="0 0 16 16">
@@ -23,19 +31,17 @@
 </template>
 
 <script>
-//Same as before
 export default {
   name: 'TemplateSelector',
   data() {
     return {
       templates: [
-        // Use larger placeholder images for better preview
-        { name: 'Template 1', image: 'https://via.placeholder.com/300x400' },
-        { name: 'Template 2', image: 'https://via.placeholder.com/300x400' },
-        { name: 'Template 3', image: 'https://via.placeholder.com/300x400' },
-        { name: 'Template 4', image: 'https://via.placeholder.com/300x400' },
+        { name: 'Modern', className: 'template-modern' },
+        { name: 'Classic', className: 'template-classic' },
+        { name: 'Minimalist', className: 'template-minimalist' },
+        { name: 'Creative', className: 'template-creative' },
       ],
-      selectedTemplate: 'Template 1', // Default template
+      selectedTemplate: 'Modern', // Default template
       selectionError: ''
     };
   },
@@ -44,7 +50,7 @@ export default {
       if (!newTemplate) {
         this.selectionError = 'Please select a template.';
       } else {
-        this.selectionError = ''; // Clear error if a template is selected
+        this.selectionError = '';
       }
     }
   },
@@ -55,7 +61,7 @@ export default {
     },
   },
   mounted() {
-    this.$emit('template-selected', this.selectedTemplate); //Emit on mount
+    this.$emit('template-selected', this.selectedTemplate);
   }
 };
 </script>
@@ -64,5 +70,12 @@ export default {
   /* Add styles for positioning the checkmark */
 .template-option {
   position: relative; /* For absolute positioning of the checkmark */
+}
+/* Basic styling for the preview (customize as needed) */
+.template-preview {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+    height: 200px; /* Set a fixed height for consistent preview sizes */
 }
 </style>

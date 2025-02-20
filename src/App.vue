@@ -2,7 +2,7 @@
   <div id="app" class="bg-light min-vh-100">
     <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
       <div class="container py-2">
-        <RouterLink to="/" class="navbar-brand">Resume Builder</RouterLink>
+        <RouterLink to="/" class="navbar-brand">Content Builder</RouterLink>
         <div class="navbar-nav">
           <RouterLink v-if="user" to="/leaderboard" class="nav-link">Leaderboard</RouterLink>
           <button v-if="user" @click="handleSignOut" class="btn btn-link nav-link">Sign Out</button>

@@ -1,108 +1,124 @@
 <template>
   <div class="main-container">
-    <!-- Modern Hero Section -->
-    <div class="hero-section">
-      <div class="hero-content">
-        <h1 class="hero-title">Craft Your Perfect Resume</h1>
-        <p class="hero-description">
-          Transform your career journey into a compelling story. Our AI-powered platform 
-          helps you create professional resumes that leave lasting impressions.
-        </p>
-        <!-- Feature Cards -->
-        <div class="feature-cards">
-          <div class="feature-card">
-            <i class="bi bi-lightning-fill"></i>
-            <h3 class="feature-title">Lightning Fast</h3>
-            <p class="feature-description">Generate your professional resume in under 5 minutes</p>
-          </div>
-          <div class="feature-card">
-            <i class="bi bi-magic"></i>
-            <h3 class="feature-title">AI-Powered</h3>
-            <p class="feature-description">Advanced AI helps craft compelling content tailored to your career</p>
-          </div>
-          <div class="feature-card">
-            <i class="bi bi-check-circle"></i>
-            <h3 class="feature-title">ATS-Optimized</h3>
-            <p class="feature-description">Engineered to pass Applicant Tracking Systems with ease</p>
-          </div>
+    <!-- Modern Hero Section (Only for unauthenticated users) -->
+      <Transition name="fade">
+        <div v-if="!user" class="hero-section">
+            <div class="hero-content">
+              <h1 class="hero-title">Craft Your Perfect Content</h1>
+              <p class="hero-description">
+                Transform your ideas into compelling content. Our AI-powered platform
+                helps you create professional content that leaves lasting impressions.
+              </p>
+              <!-- Feature Cards -->
+              <div class="feature-cards">
+                <div class="feature-card">
+                  <i class="bi bi-lightning-fill"></i>
+                  <h3 class="feature-title">Lightning Fast</h3>
+                  <p class="feature-description">Generate your content in minutes.</p>
+                </div>
+                <div class="feature-card">
+                  <i class="bi bi-magic"></i>
+                  <h3 class="feature-title">AI-Powered</h3>
+                  <p class="feature-description">Advanced AI helps craft compelling content tailored to your needs.</p>
+                </div>
+                <div class="feature-card">
+                  <i class="bi bi-check-circle"></i>
+                  <h3 class="feature-title">High Quality</h3>
+                  <p class="feature-description">Create professional, polished content.</p>
+                </div>
+              </div>
+            </div>
         </div>
-        <ModelSelector 
-          :models="models" 
-          v-model:selectedModel="selectedModel" 
-          class="model-selector-container"
-        />
-      </div>
-    </div>
+    </Transition>
+
 
     <!-- Auth Section -->
-    <div v-if="!user" class="auth-section">
-      <div class="auth-content">
-        <h2>Start Your Journey</h2>
-        <p>Join thousands of professionals who've elevated their careers</p>
-        <button @click="showAuthModal = true" class="cta-button">
-          <i class="bi bi-person-plus me-2"></i> Create Your Resume
-        </button>
-        <p class="auth-note">No credit card required • Free to start</p>
-      </div>
-      <AuthForm v-if="showAuthModal" class="auth-form-modal" />
-    </div>
-
-    <div v-else class="main-content">
-      <!-- Template Selection -->
-      <div class="section template-section">
-        <div class="section-header">
-          <h2>Choose Your Design</h2>
-          <p>Select a template that matches your professional style</p>
+      <Transition name="fade">
+        <div v-if="!user" class="auth-section">
+            <div class="auth-content">
+              <h2>Start Your Journey</h2>
+              <p>Join thousands of professionals who've elevated their careers</p>
+              <button @click="showAuthModal = true" class="cta-button">
+                <i class="bi bi-person-plus me-2"></i> Create Your Content
+              </button>
+              <p class="auth-note">No credit card required • Free to start</p>
+            </div>
+          <AuthForm v-if="showAuthModal" class="auth-form-modal" />
         </div>
-        <TemplateSelector 
-          @template-selected="handleTemplateSelection" 
-          class="template-grid"
-        />
-      </div>
+      </Transition>
 
-      <!-- Form Section -->
-      <ResumeForm 
-        :selectedTemplate="selectedTemplate" 
-        @generate-resume="handleGenerateResume"
-        class="resume-form-section"
-      />
 
-      <!-- Preview Section -->
-      <div v-if="resumeHtml" class="preview-section" :class="{ 'active': resumeHtml }">
-        <div class="preview-header">
-          <h2>Preview</h2>
-          <button @click="downloadResume" class="download-button">
-            <i class="bi bi-download"></i> Download PDF
-          </button>
+
+    <div v-if="user" class="main-content">
+       <!-- Content Type Selection -->
+      <div class="section content-type-section mb-4">
+          <h2 class="text-center mb-3">What would you like to create?</h2>
+          <div class="d-flex justify-content-center">
+            <select v-model="contentType" class="form-select w-auto">
+              <option value="resume">Resume</option>
+              <option value="poster">Poster</option>
+              <option value="social">Social Media Post</option>
+              <option value="custom">Custom HTML</option>
+            </select>
+          </div>
         </div>
-        
-        <ResumePreview 
-          :resumeHtml="resumeHtml" 
-          :resumeData="resumeData" 
-          class="preview-container"
-        />
 
-        <CustomizationPrompts 
-          v-if="resumeHtml" 
-          @prompt-selected="handlePromptSelected"
-          @prompt-cleared="handlePromptCleared" 
-          class="customization-section"
-        />
+        <Transition name="slide">
+            <div v-if="contentType">
+                <!-- Template Selection (for all content types except "custom") -->
+                <div v-if="contentType !== 'custom'" class="section template-section">
+                <div class="section-header">
+                    <h2>Choose Your Design</h2>
+                    <p>Select a template that matches your style</p>
+                </div>
+                <TemplateSelector
+                    @template-selected="handleTemplateSelection"
+                    class="template-grid"
+                />
+                </div>
 
-        <RatingComponent 
-          v-if="showRating" 
-          :model-name="selectedModel" 
-          @rating-submitted="hideRatingComponent"
-          @rating-closed="hideRatingComponent" 
-          class="rating-section"
-        />
-      </div>
+                <!-- Model Selection -->
+                <ModelSelector
+                    :models="models"
+                    v-model:selectedModel="selectedModel"
+                    class="model-selector-container"
+                />
+                <!-- Form Section -->
+                <ContentForm
+                :contentType="contentType"
+                :selectedTemplate="selectedTemplate"
+                @generate-content="handleGenerateContent"
+                class="content-form-section"
+                />
+
+                <!-- Preview Section -->
+                <Transition name="fade">
+                    <div v-if="contentHtml" class="preview-section" >
+                    <ContentPreview
+                        :contentHtml="contentHtml"
+                        :contentData="contentData"
+                        :contentType="contentType"
+                        @content-updated="handleContentUpdate"
+                        class="preview-container"
+                    />
+
+                    <RatingComponent
+                        v-if="showRating && (contentType === 'resume')"
+                        :model-name="selectedModel"
+                        @rating-submitted="hideRatingComponent"
+                        @rating-closed="hideRatingComponent"
+                        class="rating-section"
+                    />
+                    </div>
+                </Transition>
+            </div>
+        </Transition>
     </div>
 
     <LoadingSpinner :loading="isLoading" />
-    
-    <div v-if="errorMessage" class="error-message" role="alert">
-      <i class="bi bi-exclamation-triangle-fill"></i>
+
+    <div v-if="errorMessage" class="alert alert-danger mt-3" role="alert">
+      <i class="bi bi-exclamation-triangle-fill me-2"></i>
       <span>{{ errorMessage }}</span>
     </div>
   </div>
@@ -110,17 +126,16 @@
 
 <script>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import ResumeForm from "@/components/ResumeForm.vue";
-import ResumePreview from "@/components/ResumePreview.vue";
+import ContentForm from "@/components/ContentForm.vue";
+import ContentPreview from "@/components/ContentPreview.vue";
 import TemplateSelector from "@/components/TemplateSelector.vue";
 import LoadingSpinner from "@/components/LoadingSpinner.vue";
 import RatingComponent from "@/components/RatingComponent.vue";
-import CustomizationPrompts from "@/components/CustomizationPrompts.vue";
 import AuthForm from "@/components/AuthForm.vue";
 import ModelSelector from "@/components/ModelSelector.vue";
-import { generateResume } from '@/utils/generation';
+import { generateContent } from '@/utils/generation';
 import { canGenerateResume, updateLastGenerationDate, fetchModelRateLimits, checkModelRateLimit } from '@/utils/firebaseUtils';
-import html2pdf from 'html2pdf.js';
+// import html2pdf from 'html2pdf.js'; //Removed from here
 import { auth } from '@/firebase';
 import { useRouter } from 'vue-router';
 
@@ -128,32 +143,31 @@ import { useRouter } from 'vue-router';
 export default {
   name: "HomeView",
   components: {
-    ResumeForm,
-    ResumePreview,
+    ContentForm,
+    ContentPreview,
     TemplateSelector,
     LoadingSpinner,
     RatingComponent,
-    CustomizationPrompts,
     AuthForm,
     ModelSelector,
   },
   setup() {
     const isLoading = ref(false);
-    const selectedTemplate = ref("Template 1");
-    const selectedModel = ref("gemini-2.0-pro-exp-02-05");
+    const selectedTemplate = ref("Modern"); // Default
+    const selectedModel = ref("gemini-2.0-pro-exp-02-05");  //Default
     const models = ref([
       { name: 'gemini-2.0-flash-lite-preview-02-05', displayName: 'Gemini 2.0 Flash-Lite', quality: 'Moderate', speed: 'Fast', isRateLimited: false },
       { name: 'gemini-2.0-flash', displayName: 'Gemini 2.0 Flash', quality: 'Moderate', speed: 'Fast', isRateLimited: false },
       { name: 'gemini-2.0-flash-thinking-exp-01-21', displayName: 'Gemini 2.0 Flash Thinking', quality: 'High', speed: 'Moderate', isRateLimited: false },
       { name: 'gemini-2.0-pro-exp-02-05', displayName: 'Gemini 2.0 Pro', quality: 'Very High', speed: 'Slower', isRateLimited: false }
     ]);
-    const resumeHtml = ref("");
-    const resumeData = ref(null);
+    const contentHtml = ref("");
+    const contentData = ref(null);
     const errorMessage = ref("");
     const showRating = ref(false);
-    const selectedCustomizationPrompt = ref("");
     const showAuthModal = ref(false);
     const router = useRouter();
+    const contentType = ref('resume'); // Default content type
 
     const user = ref(null);
 
@@ -174,22 +188,12 @@ export default {
 
     const handleTemplateSelection = (template) => {
       selectedTemplate.value = template;
-      resumeHtml.value = "";
-      resumeData.value = null;
+      contentHtml.value = "";
+      contentData.value = null;
       showRating.value = false;
     };
 
-    const handlePromptSelected = (prompt) => {
-      selectedCustomizationPrompt.value = prompt;
-      // Regenerate the resume immediately when a prompt is selected
-      regenerateWithPrompt();
-    };
-
-    const handlePromptCleared = () => {
-      selectedCustomizationPrompt.value = "";
-    };
-
-    const handleGenerateResume = async (data) => {
+    const handleGenerateContent = async (data) => {
       const currentUser = auth.currentUser;
       errorMessage.value = "";
 
@@ -202,7 +206,7 @@ export default {
 
       //CHECK USER RATE LIMIT
       if (!(await canGenerateResume(userId))) {
-        errorMessage.value = "You have reached the daily limit of 1 resume generation. Please try again tomorrow.";
+        errorMessage.value = "You have reached the daily limit of 1 content generation. Please try again tomorrow.";
         return;
       }
 
@@ -212,75 +216,42 @@ export default {
         return; // Prevent generation
       }
       isLoading.value = true;
-      resumeHtml.value = "";
-      resumeData.value = null;
-      showRating.value = false; // Hide rating until *after* regeneration
+      contentHtml.value = "";
+      contentData.value = null;
+      showRating.value = false;
 
       try {
-        const generated = await generateResume(data.formData, data.selectedTemplate, "", selectedModel.value); // Initial generation: NO prompt
-        resumeHtml.value = generated.html;
-        resumeData.value = data.formData;
+        const generated = await generateContent(data.formData, data.selectedTemplate, selectedModel.value, contentType.value);
+        contentHtml.value = generated.html;
+        contentData.value = data.formData;
         await updateLastGenerationDate(userId);
-        // showRating.value = true; //Move after regeneration
-
-      } catch (error) {
-        errorMessage.value = error.message;
-      } finally {
-        isLoading.value = false;
-      }
-    };
-
-    const regenerateWithPrompt = async () => {
-      if (!selectedCustomizationPrompt.value) {
-        return; // Don't regenerate if no prompt is selected
-      }
-
-      isLoading.value = true;
-      showRating.value = false; // Hide the rating component
-      try {
-        // Use the *existing* resumeData and selectedTemplate
-        const generated = await generateResume(resumeData.value, selectedTemplate.value, selectedCustomizationPrompt.value, selectedModel.value);
-        resumeHtml.value = generated.html; // Update the existing resumeHtml
         showRating.value = true;
+
       } catch (error) {
         errorMessage.value = error.message;
       } finally {
         isLoading.value = false;
-        selectedCustomizationPrompt.value = ""; // Clear the prompt after use
       }
-    };
-
-
-
-    const downloadResume = () => {
-      const element = document.createElement('div');
-      element.innerHTML = resumeHtml.value;  // Use the sanitized HTML.
-      const opt = {
-        margin: 0.5,
-        filename: 'my-resume.pdf',
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-      };
-
-      html2pdf().from(element).set(opt).save().then(() => {
-        console.log("PDF generated successfully");
-      }).catch(err => {
-        console.error("PDF generation failed:", err);
-        errorMessage.value = "Failed to generate PDF.  Please try again.";
-      });
     };
 
     const hideRatingComponent = () => {
       showRating.value = false;
     };
 
+      const handleContentUpdate = (updatedData) => {
+        contentData.value = updatedData;
+        // You might want to re-generate the HTML here if you're using Approach 2
+        // (inline styles generated by AI) and the user has significantly changed
+        // the content structure.  For this example, we're assuming minor edits
+        // that don't require re-generation.
+    };
+
+
     onMounted(async () => {
       try {
-        // Not used for now, using seperate checks
-        // const rateLimits = await fetchModelRateLimits();
+        // const rateLimits = await fetchModelRateLimits(); //Not using it for now
       } catch (error) {
-        errorMessage.value = error.message; // Display error if fetching fails
+        errorMessage.value = error.message;
       }
     });
 
@@ -289,26 +260,24 @@ export default {
       selectedTemplate,
       selectedModel,
       models,
-      resumeHtml,
-      resumeData,
+      contentHtml,
+      contentData,
       errorMessage,
       showRating,
-      selectedCustomizationPrompt,
       showAuthModal,
       user,
+      contentType,
       handleTemplateSelection,
-      handlePromptSelected,
-      handlePromptCleared,
-      handleGenerateResume,
-      regenerateWithPrompt,
-      downloadResume,
-      hideRatingComponent
+      handleGenerateContent,
+      hideRatingComponent,
+      handleContentUpdate
     };
   }
 };
 </script>
 
 <style scoped>
+/* ... (Keep your existing styles here, and add any new ones) ... */
 .hero-section {
   position: relative;
   overflow: hidden;
@@ -445,13 +414,17 @@ export default {
   .features-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .hero-section {
     padding: 2rem 1rem;
   }
-  
+
   .step-description {
     display: none;
+  }
+   /* Adjust model selector for smaller screens */
+  .model-options-grid {
+    grid-template-columns: repeat(2, 1fr); /* 2 columns on smaller screens */
   }
 }
 
@@ -483,4 +456,20 @@ export default {
   color: rgba(255, 255, 255, 0.9);
   line-height: 1.4;
 }
+/* Fade-in animation */
+/* .fade-enter-active, .fade-leave-active {
+  transition: opacity 0.5s ease;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+} */
+
+/* Slide-in animation */
+/* .slide-enter-active, .slide-leave-active {
+  transition: transform 0.5s ease, opacity 0.5s ease;
+}
+.slide-enter-from, .slide-leave-to {
+  transform: translateY(20px);
+  opacity: 0;
+} */
 </style>

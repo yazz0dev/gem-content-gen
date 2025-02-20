@@ -1,4 +1,5 @@
 /* src/assets/css/main.css */
+
 @import 'bootstrap/dist/css/bootstrap.min.css';
 
 /* Root Variables - Updated Color Scheme */
@@ -33,7 +34,7 @@
   --success-color: #10b981;
   --warning-color: #f59e0b;
   --error-color: #ef4444;
-  
+
   /* Spacing */
   --spacing-xs: 0.5rem;
   --spacing-sm: 1rem;
@@ -63,14 +64,14 @@ body {
 }
 
 /* Subtle Animations (Keep these) */
-.fade-in {
+/* .fade-in {
   opacity: 0;
   transition: opacity 0.5s ease-in-out;
 }
 
 .fade-in.active {
   opacity: 1;
-}
+} */
 
 .hover-highlight:hover {
   background-color: #e9ecef;
@@ -138,14 +139,14 @@ body {
   background: linear-gradient(to bottom right, rgba(37, 99, 235, 0.1), rgba(37, 99, 235, 0.05));
 }
 
-/* Resume Preview */
-.resume-preview-container {
-  border-radius: var(--border-radius-lg);
-  padding: 1.5rem;
-  background-color: var(--surface-color);
-  margin-bottom: 1.5rem;
-  box-shadow: var(--shadow-md);
-  border: none;
+/* Content Preview */
+.content-preview-container {
+    border-radius: var(--border-radius-lg);
+    padding: 1.5rem;
+    background-color: var(--surface-color);
+    margin-bottom: 1.5rem;
+    box-shadow: var(--shadow-md);
+    border: none;
 }
 
 /* Additions for a more modern look */
@@ -480,15 +481,15 @@ h1, h2, h3 {
   background: white;
   border-radius: 24px;
   padding: var(--spacing-lg);
-  opacity: 0;
-  transform: translateY(20px);
+  /* opacity: 0;
+  transform: translateY(20px); */
   transition: all 0.5s ease;
 }
 
-.preview-section.active {
+/* .preview-section.active {
   opacity: 1;
   transform: translateY(0);
-}
+} */
 
 /* Model Selector Container */
 .model-selector-container {
@@ -538,11 +539,11 @@ h1, h2, h3 {
     --border-radius-lg: 0.75rem;
     --border-radius-md: 0.5rem;
   }
-  
+
   .container {
     padding: 1rem;
   }
-  
+
   .hero-section {
     padding: 2rem 1rem;
   }
@@ -553,16 +554,32 @@ h1, h2, h3 {
   .hero-title {
     font-size: 2rem;
   }
-  
+
   .hero-description {
     font-size: 1rem;
   }
-  
+
   .feature-cards {
     grid-template-columns: 1fr;
   }
-  
+
   .main-container {
     padding: var(--spacing-md);
   }
+}
+/* Fade-in animation */
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.5s ease;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
+
+/* Slide-in animation */
+.slide-enter-active, .slide-leave-active {
+  transition: transform 0.5s ease, opacity 0.5s ease;
+}
+.slide-enter-from, .slide-leave-to {
+  transform: translateY(20px);
+  opacity: 0;
 }
