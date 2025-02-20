@@ -1,0 +1,160 @@
+/* Mobile First Approach */
+:root {
+  --mobile-padding: 1rem;
+  --tablet-padding: 1.5rem;
+  --desktop-padding: 2rem;
+}
+
+/* Base Mobile Styles */
+.content-generation-section {
+  padding: var(--mobile-padding);
+  margin: 1rem;
+}
+
+.model-grid,
+.content-type-grid,
+.template-grid {
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+.step-label {
+  font-size: 0.8rem;
+}
+
+.preview-section {
+  margin-top: 1.5rem;
+}
+
+/* Tablet Styles */
+@media (min-width: 768px) {
+  .content-generation-section {
+    padding: var(--tablet-padding);
+    margin: 1.5rem;
+  }
+
+  .model-grid,
+  .content-type-grid,
+  .template-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+
+  .step-label {
+    font-size: 0.9rem;
+  }
+}
+
+/* Desktop Styles */
+@media (min-width: 1024px) {
+  .content-generation-section {
+    padding: var(--desktop-padding);
+    margin: 2rem auto;
+    max-width: 1200px;
+  }
+
+  .model-grid,
+  .content-type-grid {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+  }
+
+  .template-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .step-label {
+    font-size: 1rem;
+  }
+}
+
+/* Touch Device Optimizations */
+@media (hover: none) {
+  .model-card:hover,
+  .content-type-card:hover,
+  .template-option:hover {
+    transform: none;
+  }
+
+  .btn:hover {
+    transform: none !important;
+  }
+}
+
+/* Improved Mobile Navigation */
+@media (max-width: 767px) {
+  .stepper {
+    overflow-x: auto;
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .step {
+    min-width: 100px;
+    margin-right: 1rem;
+  }
+
+  .step-connector {
+    min-width: 2rem;
+  }
+
+  /* Stack form and preview sections */
+  .generation-container .row {
+    flex-direction: column;
+  }
+
+  .input-section,
+  .preview-section {
+    margin-bottom: 1.5rem;
+  }
+
+  /* Adjust button sizes for touch */
+  .btn {
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    min-height: 44px; /* Better touch targets */
+  }
+
+  /* Make form inputs more touch-friendly */
+  .form-control,
+  .form-select {
+    min-height: 44px;
+    font-size: 16px; /* Prevent iOS zoom */
+  }
+
+  textarea.form-control {
+    min-height: 100px;
+  }
+}
+
+/* Fixed Position Elements */
+.loading-overlay {
+  position: fixed;
+  padding: 1rem;
+}
+
+/* Improved Focus States */
+.form-control:focus,
+.btn:focus,
+.model-card:focus,
+.content-type-card:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* Landscape Mode Optimization */
+@media (max-height: 500px) and (orientation: landscape) {
+  .stepper {
+    position: sticky;
+    top: 0;
+    background: var(--surface-color);
+    z-index: 10;
+    padding-top: 0.5rem;
+  }
+
+  .preview-section {
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+}

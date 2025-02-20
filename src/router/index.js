@@ -28,7 +28,7 @@ const router = createRouter({
   routes
 });
 
-router.beforeEach((to, next) => {
+router.beforeEach((to, from, next) => {
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
   const currentUser = auth.currentUser;
 

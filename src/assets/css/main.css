@@ -583,3 +583,77 @@ h1, h2, h3 {
   transform: translateY(20px);
   opacity: 0;
 }
+
+/* Content Generation Page Specific Styles */
+.step-content {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.generation-container {
+  background: var(--surface-color);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-lg);
+}
+
+.input-section {
+  background: var(--background-color);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
+}
+
+.preview-section {
+  background: var(--background-color);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
+  height: 100%;
+}
+
+/* Form Styling */
+.form-floating textarea {
+  border: 2px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+.form-floating textarea:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* Additional Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive Design for Content Generation */
+@media (max-width: 768px) {
+  .stepper {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .step-connector {
+    width: 2px;
+    height: 20px;
+    margin: 0.5rem 0 0.5rem 19px;
+  }
+
+  .model-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .generation-container .row {
+    flex-direction: column;
+  }
+
+  .input-section,
+  .preview-section {
+    margin-bottom: var(--spacing-md);
+  }
+}
