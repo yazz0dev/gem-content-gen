@@ -1,24 +1,20 @@
 <template>
-  <div class="model-selector-wrapper">
-    <h3 class="text-center text-white mb-3">Select a Model</h3>
-    <p v-if="rateLimitError" class="text-danger text-center">{{ rateLimitError }}</p>
-    <div class="model-options-grid">
-      <div v-for="model in models"
-           :key="model.id"
-           @click="!model.isRateLimited ? selectModel(model.id) : null"
-           :class="['model-option', { 'selected': modelValue === model.id, 'rate-limited': model.isRateLimited }]"
-           :title="model.isRateLimited ? 'This model is currently rate-limited. Please try again later.' : ''">
-        <div class="model-info">
-          <i :class="model.icon"></i>
+  <div class="model-selector">
+    <div class="model-options-wrapper">
+      <div class="model-options-container">
+        <div v-for="model in models"
+             :key="model.id"
+             @click="!model.isRateLimited ? selectModel(model.id) : null"
+             :class="['model-option', { 'selected': modelValue === model.id, 'rate-limited': model.isRateLimited }]"
+             :title="model.isRateLimited ? 'This model is currently rate-limited. Please try again later.' : ''">
+          <div class="model-icon">
+            <i :class="model.icon"></i>
+          </div>
           <h4 class="model-name">{{ model.name }}</h4>
           <p class="model-description">{{ model.description }}</p>
           <div class="model-stats">
-            <span class="model-rating">
-              <i class="bi bi-star-fill"></i> {{ model.rating }}
-            </span>
-            <span class="model-speed">
-              {{ model.speed }}
-            </span>
+            <span class="model-speed">{{ model.speed }}</span>
+            <span class="model-quality">{{ model.quality }}</span>
           </div>
         </div>
       </div>
@@ -79,83 +75,85 @@ export default {
 </script>
 
 <style scoped>
-.model-selector-wrapper {
-  max-width: 1000px;
-  margin: 0 auto;
+.model-selector {
+  width: 100%;
+  overflow: hidden;
 }
 
-.model-options-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+.model-options-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  padding: 1rem 0;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+.model-options-wrapper::-webkit-scrollbar {
+  display: none; /* Chrome/Safari/Opera */
+}
+
+.model-options-container {
+  display: flex;
   gap: 1rem;
-  justify-items: center;
-  padding: 1rem;
+  min-width: min-content;
+  padding: 0 0.5rem;
 }
 
 .model-option {
-  width: 100%;
-  max-width: 250px;
-  text-align: center;
-  background: rgba(255, 255, 255, 0.9);
-  padding: 1rem;
-  border-radius: 12px;
-  transition: all 0.2s ease;
+  flex: 0 0 250px;
+  background: white;
+  border-radius: var(--border-radius-lg);
+  padding: 1.5rem;
   cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
 }
 
 .model-option:hover {
   transform: translateY(-4px);
   box-shadow: var(--shadow-md);
-  background: white;
 }
 
 .model-option.selected {
   border-color: var(--primary-color);
   background: linear-gradient(to bottom right, rgba(37, 99, 235, 0.1), rgba(37, 99, 235, 0.05));
-  color: white;
-  border: 2px solid rgba(255, 255, 255, 0.2);
 }
 
-.model-option.selected:hover {
-  background: var(--primary-color);
-  color: white;
-  border-color: white;
-}
-
-.model-info {
-  text-align: center;
-}
-
-.model-info i {
+.model-icon {
   font-size: 2rem;
   color: var(--primary-color);
   margin-bottom: 1rem;
 }
 
 .model-name {
-  font-size: 1rem;
+  font-size: 1.1rem;
   font-weight: 600;
   margin-bottom: 0.5rem;
 }
 
 .model-description {
-  color: var(--text-secondary);
   font-size: 0.9rem;
+  color: var(--text-secondary);
   margin-bottom: 1rem;
 }
 
 .model-stats {
   display: flex;
-  justify-content: center;
-  gap: 1rem;
+  justify-content: space-between;
   font-size: 0.9rem;
   color: var(--text-secondary);
 }
 
-.model-rating i {
-  color: #fbbf24;
-  font-size: 1rem;
-  margin-right: 0.25rem;
+@media (min-width: 1024px) {
+  .model-options-container {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .model-option {
+    flex: 0 0 calc(25% - 1rem);
+    min-width: 220px;
+  }
 }
 
 .rate-limited {

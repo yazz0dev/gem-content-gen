@@ -72,10 +72,8 @@
          <!-- Model Selection -->
          <div v-if="currentStep === 3" class="step-content">
            <div class="model-selector-container">
-             <h3 class="section-title">Choose AI Model</h3>
-             <div class="model-grid horizontal">
-               <ModelSelector :models="availableModels" v-model:modelValue="selectedModel" />
-             </div>
+             <h3 class="section-title mb-4">Choose AI Model</h3>
+             <ModelSelector :models="availableModels" v-model:modelValue="selectedModel" />
              <div class="d-flex justify-content-between mt-4">
                <button @click="previousStep" class="btn btn-secondary">
                  <i class="bi bi-arrow-left me-2"></i> Back
@@ -93,7 +91,12 @@
              <div class="row">
                <div class="col-md-6">
                  <div class="input-section">
-                   <h3 class="section-title">{{ selectedContentType }} Details</h3>
+                   <div class="d-flex justify-content-between align-items-center mb-3">
+                     <h3 class="section-title mb-0">{{ formattedContentType }} Details</h3>
+                     <button @click="handleBackFromGenerate" class="btn btn-outline-secondary">
+                       <i class="bi bi-arrow-left me-2"></i> Back
+                     </button>
+                   </div>
                      <!-- Display Generation Error Here -->
                      <div v-if="generationError" class="alert alert-danger" role="alert">
                          {{ generationError }}
@@ -144,7 +147,7 @@
  </template>
  
  <script>
- import { ref, onMounted, watch } from 'vue';
+ import { ref, onMounted, watch, computed } from 'vue';
  import TemplateSelector from '@/components/TemplateSelector.vue';
  import ContentPreview from '@/components/ContentPreview.vue';
  import LoadingSpinner from '@/components/LoadingSpinner.vue';
@@ -422,6 +425,11 @@
        }
      };
  
+     const handleBackFromGenerate = () => {
+       generationError.value = ''; // Clear any generation errors
+       generatedContent.value = ''; // Clear generated content
+       previousStep();
+     };
  
      const handleGenerateContent = async (formData) => {
        console.log('Generate button clicked', formData);
@@ -479,6 +487,11 @@
        showRating.value = false;
      };
  
+     const formattedContentType = computed(() => {
+       const type = contentTypes.find(t => t.id === selectedContentType.value);
+       return type ? type.name : '';
+     });
+
      onMounted(() => {
        // Add any initialization logic here
      });
@@ -504,7 +517,9 @@
        handleGenerateContent, // Changed to use new function
        handleRatingSubmitted,
        handleRatingClosed,
-       generationError
+       generationError,
+       handleBackFromGenerate,
+       formattedContentType
      };
    }
  };
@@ -566,57 +581,6 @@
   background: var(--secondary-color);
   margin: 0 1rem;
   margin-bottom: 2rem;
-}
-
-/* Model Selection Styles */
-.model-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
-  margin-top: 1.5rem;
-}
-
-.model-card {
-  background: white;
-  border-radius: var(--border-radius-md);
-  padding: 1.5rem;
-  border: 2px solid transparent;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.model-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-md);
-}
-
-.model-card.selected {
-  border-color: var(--primary-color);
-  background: linear-gradient(to bottom right, rgba(37, 99, 235, 0.1), rgba(37, 99, 235, 0.05));
-}
-
-.model-icon {
-  font-size: 2rem;
-  color: var(--primary-color);
-  margin-bottom: 1rem;
-}
-
-.model-stats {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 1rem;
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-}
-
-.model-stats span {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.model-stats i {
-  font-size: 1rem;
 }
 
 /* Animation for loading spinner */
@@ -752,18 +716,5 @@
   .type-icon {
     font-size: 2rem;
   }
-}
-
-.model-grid.horizontal {
-  display: flex;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  gap: 1rem;
-  padding: 1rem 0;
-}
-
-.model-grid.horizontal .model-option {
-  flex: 0 0 300px;
-  margin-right: 1rem;
 }
 </style>
