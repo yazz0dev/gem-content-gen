@@ -1,8 +1,13 @@
+/* src/assets/css/responsive.css */
+
 /* Mobile First Approach */
 :root {
   --mobile-padding: 1rem;
   --tablet-padding: 1.5rem;
   --desktop-padding: 2rem;
+    /* Consistency with main.css */
+    --border-radius-lg: 1rem; /* Default to lg */
+    --border-radius-md: 0.75rem;
 }
 
 /* Base Mobile Styles */
@@ -43,6 +48,11 @@
   .step-label {
     font-size: 0.9rem;
   }
+    /* Override for tablet */
+    :root {
+        --border-radius-lg: 0.75rem;
+        --border-radius-md: 0.5rem;
+    }
 }
 
 /* Desktop Styles */
@@ -66,6 +76,8 @@
   .step-label {
     font-size: 1rem;
   }
+    /* Override for desktop - use values from main.css*/
+
 }
 
 /* Touch Device Optimizations */

@@ -22,6 +22,7 @@ async function signup(email, password) {
       });
   } catch (error) {
       // Improve error handling
+      console.error("Signup Error:", error); // Log the full error
       if (error.code === 'auth/weak-password') {
           throw new Error('Password should be at least 6 characters.');
       } else if (error.code === 'auth/email-already-in-use') {
@@ -37,6 +38,7 @@ async function login(email, password) {
       await signInWithEmailAndPassword(auth, email, password);
   } catch (error) {
       // Improve error handling
+      console.error("Login Error:", error); // Log the full error
       if (error.code === 'auth/invalid-credential') {
           throw new Error("Login failed.  Please check your email and password.");
       }
@@ -48,6 +50,7 @@ async function signOutUser() {
   try {
       await signOut(auth);
   } catch (error) {
+      console.error("Sign Out Error:", error); // Log the full error
       throw new Error('Sign out failed. Please try again later.');
   }
 }
@@ -56,6 +59,7 @@ async function sendPasswordResetEmail(email) {
   try {
       await firebaseSendPasswordResetEmail(auth, email);
   } catch (error) {
+     console.error("Password Reset Error:", error); // Log the full error
     if (error.code === 'auth/user-not-found'){
       throw new Error("User not found, check the email provided")
     }

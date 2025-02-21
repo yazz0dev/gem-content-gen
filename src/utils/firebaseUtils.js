@@ -47,47 +47,56 @@ async function canGenerateResume(userId) {
         return true; // New user, allow generation
     }
 }
-//Other Functions Remains same
+
+// Use Transaction For updating
 async function updateLastGenerationDate(userId) {
-    const userDocRef = doc(db, "users", userId);
-    const userDocSnap = await getDoc(userDocRef);
-    const now = new Date();
+  const userDocRef = doc(db, "users", userId);
+  const now = new Date();
 
-    if (userDocSnap.exists()) {
-         const userData = userDocSnap.data();
+  try {
+    await runTransaction(db, async (transaction) => {
+      const userDocSnap = await transaction.get(userDocRef);
+
+      if (userDocSnap.exists()) {
+        const userData = userDocSnap.data();
         const lastGeneration = userData.lastGenerationDate;
-        const generationCount = userData.generationCount || 0; // Ensure we have a count
+        let generationCount = userData.generationCount || 0;
 
+        if (lastGeneration) {
+          const last = new Date(lastGeneration);
+          const diffInMilliseconds = now - last;
+          const diffInHours = diffInMilliseconds / (1000 * 60 * 60);
 
-        const last = new Date(lastGeneration);
-        const diffInMilliseconds = now - last;
-        const diffInHours = diffInMilliseconds / (1000 * 60 * 60);
-
-        //Crucial Logic
-        if (diffInHours >= 24) {
-            // Reset the count if it's been more than 24 hours
-            await updateDoc(userDocRef, {
-                lastGenerationDate: now.getTime(),
-                generationCount: 1,  // Reset to 1
-            });
+          if (diffInHours >= 24) {
+            generationCount = 1; // Reset count
+          } else {
+            generationCount = increment(1); // Increment
+          }
         } else {
-              // Increment the count if within the 24-hour window
-              await updateDoc(userDocRef, {
-                lastGenerationDate: now.getTime(), // Still update the timestamp
-                generationCount: increment(1), // Increment the count.
-            });
+            generationCount = 1;
         }
-    } else {
-      //This Case Shouldn't happen with the try catch block in Signup
-        await setDoc(userDocRef, {
+         transaction.set(userDocRef, {
             lastGenerationDate: now.getTime(),
-            generationCount: 1, // Start at 1 for new users
+            generationCount: generationCount,
+          }, { merge: true }); // Use set with merge
+
+      } else {
+        // First Time
+        transaction.set(userDocRef, {
+          lastGenerationDate: now.getTime(),
+          generationCount: 1,
         });
-    }
+      }
+    });
+  } catch (error) {
+    console.error("Error updating last generation date:", error);
+    throw new Error("Failed to update generation date. Please try again.");
+  }
 }
 
 
-async function submitModelRating(modelName, ratings) {
+async function submitModelRating(modelName, ratings)
+{
     try {
         const modelRef = doc(db, 'modelRatings', modelName);
         const modelDoc = await getDoc(modelRef);
@@ -118,25 +127,51 @@ async function submitModelRating(modelName, ratings) {
 
 
 async function fetchLeaderboardData() {
-    try {
-        const leaderboardData = [];
-        const querySnapshot = await getDocs(collection(db, 'modelRatings'));
-        querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            const totalScore = data.contentAccuracy + data.formatting + data.relevance + data.overallQuality;
-            const averageRating = data.count > 0 ? totalScore / (data.count * 4) * 5 : 0;
-            leaderboardData.push({
-                id: doc.id,
-                averageRating,
-                count: data.count
-            });
+  try {
+    const leaderboardData = [];
+    const querySnapshot = await getDocs(collection(db, 'modelRatings'));
+
+    for (const docSnapshot of querySnapshot.docs) {
+      const modelId = docSnapshot.id;
+      // Only include specific models
+      if (['gemini-2.0-pro-exp-02-05', 'gemini-2.0-flash-thinking-exp-01-21', 'gemini-2.0-flash', 'gemini-2.0-flash-lite-preview-02-05'].includes(modelId)) {
+        const data = docSnapshot.data();
+        const totalScore = data.contentAccuracy + data.formatting + data.relevance + data.overallQuality;
+        const averageRating = data.count > 0 ? totalScore / (data.count * 4) * 5 : 0;
+
+        // Fetch additional data (RPM, TPM, isAvailable) - Assuming they are in modelRateLimits
+        const rateLimitRef = doc(db, 'modelRateLimits', modelId);
+        const rateLimitDoc = await getDoc(rateLimitRef);
+        let rpm = 0;
+        let tpm = 0;
+        let isAvailable = false;
+
+        if (rateLimitDoc.exists()) {
+          const rateLimitData = rateLimitDoc.data();
+          rpm = rateLimitData.rpm || 0; // Provide default values
+          tpm = rateLimitData.tpm || 0;
+          isAvailable = rateLimitData.isAvailable !== undefined ? rateLimitData.isAvailable : false; //default
+
+        }
+
+
+        leaderboardData.push({
+          id: modelId,
+          averageRating,
+          count: data.count,
+          rpm,  // Add RPM
+          tpm,  // Add TPM
+          isAvailable //Add available
         });
-        leaderboardData.sort((a, b) => b.averageRating - a.averageRating);
-        return leaderboardData;
-    } catch (error) {
-        console.error("Error fetching leaderboard data:", error);
-        throw new Error("Failed to load leaderboard data."); // Consistent error handling
+      }
     }
+
+    leaderboardData.sort((a, b) => b.averageRating - a.averageRating);
+    return leaderboardData;
+  } catch (error) {
+    console.error("Error fetching leaderboard data:", error);
+    throw new Error("Failed to load leaderboard data.");
+  }
 }
 async function fetchModelRateLimits() {
   try {
@@ -153,26 +188,42 @@ async function fetchModelRateLimits() {
 }
 
 
+// Use Transaction
 export const checkModelRateLimit = async (modelName) => {
+  const rateLimitRef = doc(db, 'modelRateLimits', modelName);
+
   try {
-    const rateLimitRef = doc(db, 'modelRateLimits', modelName);
-    const rateLimitDoc = await getDoc(rateLimitRef);
+    return await runTransaction(db, async (transaction) => {
+      const rateLimitDoc = await transaction.get(rateLimitRef);
 
-    if (!rateLimitDoc.exists()) {
-      return false; // If no rate limit document exists, assume not rate limited
-    }
+      if (!rateLimitDoc.exists()) {
+        return false; // Not rate limited if no doc
+      }
 
-    const { lastReset, requestCount, maxRequests } = rateLimitDoc.data();
-    const now = new Date().getTime();
-    const resetWindow = 1000 * 60 * 60; // 1 hour in milliseconds
+      const { lastReset, requestCount, maxRequests } = rateLimitDoc.data();
+      const now = new Date().getTime();
+      const resetWindow = 1000 * 60 * 60; // 1 hour
 
-    // If the window has expired, return false (not rate limited)
-    if (now - lastReset > resetWindow) {
-      return false;
-    }
+      if (now - lastReset > resetWindow) {
+        // Reset
+        transaction.update(rateLimitRef, {
+          requestCount: 0,
+          lastReset: now,
+        });
+        return false; // Not rate limited
+      }
 
-    // Return true if rate limited, false otherwise
-    return requestCount >= maxRequests;
+      if (requestCount >= maxRequests) {
+        return true; // Rate limited
+      }
+
+      // Increment request count within the transaction
+      transaction.update(rateLimitRef, {
+        requestCount: increment(1),
+      });
+
+      return false; // Not rate limited (yet)
+    });
   } catch (error) {
     console.error('Error checking model rate limit:', error);
     return false; // Default to not rate limited on error

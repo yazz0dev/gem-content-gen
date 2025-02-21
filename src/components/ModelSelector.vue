@@ -1,11 +1,12 @@
 <template>
   <div class="model-selector-wrapper">
     <h3 class="text-center text-white mb-3">Select a Model</h3>
+     <p v-if="rateLimitError" class="text-danger text-center">{{ rateLimitError }}</p>
     <div class="model-options-grid">
-      <div v-for="model in models" 
+      <div v-for="model in models"
            :key="model.name"
            @click="!model.isRateLimited ? selectModel(model.name) : null"
-           :class="['model-option', { 'selected': selectedModel === model.name, 'rate-limited': model.isRateLimited }]"
+           :class="['model-option', { 'selected': modelValue === model.name, 'rate-limited': model.isRateLimited }]"
            :title="model.isRateLimited ? 'This model is currently rate-limited. Please try again later.' : ''">
         <h4 class="model-name">{{ model.displayName }}</h4>
         <div class="model-stats">
@@ -28,16 +29,18 @@ export default {
       type: Array,
       required: true,
     },
-    selectedModel: { // Receive selectedModel as a prop
+    modelValue: { // Changed to modelValue for v-model
         type: String,
         required: true,
     },
   },
   setup(props, { emit }) {
     const modelStatus = ref(new Map());
+    const rateLimitError = ref(''); // Added error ref
 
     // Watch for changes and check rate limits
     watchEffect(async () => {
+      rateLimitError.value = ''; // Clear previous error
       try {
         for (const model of props.models) {
           const isLimited = await checkModelRateLimit(model.name);
@@ -45,7 +48,8 @@ export default {
         }
       } catch (error) {
         console.error('Error checking rate limits:', error);
-        // Set all models as not rate limited on error
+        rateLimitError.value = 'Error checking model availability. Please try again later.'; // User-facing error
+        // Set all models as not rate limited on error (or handle differently based on your needs)
         props.models.forEach(model => {
           modelStatus.value.set(model.name, false);
         });
@@ -54,19 +58,20 @@ export default {
 
     const selectModel = (modelName) => {
       if (!modelStatus.value.get(modelName)) {
-        emit('update:selectedModel', modelName);
+        emit('update:modelValue', modelName); // Use update:modelValue for v-model
       }
     };
 
     return {
       selectModel,
-      modelStatus
+      modelStatus,
+      rateLimitError // Expose the error
     };
   },
 };
 </script>
-
 <style scoped>
+/* Same as Before */
 .model-selector-wrapper {
   max-width: 1000px; /* Increased from 800px */
   margin: 0 auto;
@@ -126,6 +131,4 @@ export default {
   pointer-events: none; /* Disable clicks on rate-limited models */
   cursor: not-allowed;
 }
-
-/* Add other styles from main.css or create new styles as needed */
 </style>

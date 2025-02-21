@@ -10,6 +10,10 @@
       </div>
     </nav>
     <RouterView />
+     <!-- Global Error Display (Optional) -->
+    <div v-if="globalError" class="alert alert-danger global-error">
+      {{ globalError }}
+    </div>
     <div v-if="authLoading" class="d-flex justify-content-center align-items-center" style="height: 100vh;">
       <p>Loading...</p>
     </div>
@@ -21,7 +25,7 @@ import { RouterView, RouterLink } from 'vue-router';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/firebase';
 import { signOutUser } from '@/utils/auth'; // Import from the auth module
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, getCurrentInstance } from 'vue';
 
 export default {
   name: 'App',
@@ -32,6 +36,16 @@ export default {
   setup() {
     const user = ref(null);
     const authLoading = ref(true);
+    const globalError = ref(''); // Add global error ref
+
+      const app = getCurrentInstance(); // Access the app instance
+
+    // Set up global error handler
+    app.appContext.config.errorHandler = (err, vm, info) => {
+      console.error("Global Error:", err, info); // Log for debugging
+      globalError.value = "An unexpected error occurred. Please try again later."; // User-friendly message
+      // Optionally, send error to a logging service (e.g., Sentry, LogRocket)
+    };
 
     onMounted(() => {
       onAuthStateChanged(auth, (currentUser) => {
@@ -48,7 +62,17 @@ export default {
       }
     };
 
-    return { user, authLoading, handleSignOut };
+    return { user, authLoading, handleSignOut, globalError };
   }
 };
 </script>
+
+<style>
+  .global-error{
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    right: 1rem;
+    z-index: 10000;
+  }
+</style>

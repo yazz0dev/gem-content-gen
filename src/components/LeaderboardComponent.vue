@@ -15,6 +15,15 @@
           <th scope="col" class="px-6 py-3 text-left text-xs font-weight-bold text-gray-500 uppercase">
             Total Ratings
           </th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-weight-bold text-gray-500 uppercase">
+            RPM
+          </th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-weight-bold text-gray-500 uppercase">
+            TPM
+          </th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-weight-bold text-gray-500 uppercase">
+            Available
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -27,6 +36,15 @@
           </td>
           <td class="px-6 py-4 whitespace-nowrap">
             {{ model.count }}
+          </td>
+           <td class="px-6 py-4 whitespace-nowrap">
+            {{ model.rpm }}
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            {{ model.tpm }}
+          </td>
+           <td class="px-6 py-4 whitespace-nowrap">
+            {{ model.isAvailable ? 'Yes' : 'No' }}
           </td>
         </tr>
       </tbody>
@@ -49,7 +67,7 @@ export default {
       try {
         leaderboardData.value = await fetchLeaderboardData();
       } catch (err) {
-        error.value = err.message;  // Use the error message from the utility.
+        error.value = err.message;
       } finally {
         loading.value = false;
       }

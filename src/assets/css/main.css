@@ -2,7 +2,7 @@
 
 @import 'bootstrap/dist/css/bootstrap.min.css';
 
-/* Root Variables - Updated Color Scheme */
+/* Root Variables - Consolidated Color Scheme */
 :root {
   --primary-color: #2563eb;
   --primary-hover: #1d4ed8;
@@ -20,20 +20,6 @@
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
   --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
   --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
-}
-
-/* Modern Color Palette */
-:root {
-  --primary-color: #4f46e5;
-  --primary-light: #818cf8;
-  --primary-dark: #3730a3;
-  --surface-color: #ffffff;
-  --background-color: #f8fafc;
-  --text-primary: #1e293b;
-  --text-secondary: #64748b;
-  --success-color: #10b981;
-  --warning-color: #f59e0b;
-  --error-color: #ef4444;
 
   /* Spacing */
   --spacing-xs: 0.5rem;
@@ -64,14 +50,7 @@ body {
 }
 
 /* Subtle Animations (Keep these) */
-/* .fade-in {
-  opacity: 0;
-  transition: opacity 0.5s ease-in-out;
-}
-
-.fade-in.active {
-  opacity: 1;
-} */
+/* Removed Redundant */
 
 .hover-highlight:hover {
   background-color: #e9ecef;
@@ -255,25 +234,7 @@ h1, h2, h3 {
   color: white;
 }
 
-/* Updated Modern UI Colors and Styles */
-:root {
-  --primary-color: #2563eb;
-  --primary-hover: #1d4ed8;
-  --secondary-color: #64748b;
-  --success-color: #059669;
-  --warning-color: #d97706;
-  --danger-color: #dc2626;
-  --background-color: #f1f5f9;
-  --surface-color: #ffffff;
-  --text-primary: #1e293b;
-  --text-secondary: #64748b;
-  --border-radius-sm: 0.5rem;
-  --border-radius-md: 0.75rem;
-  --border-radius-lg: 1rem;
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
-  --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
-  --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
-}
+
 
 .btn-primary {
   background: var(--primary-color);
