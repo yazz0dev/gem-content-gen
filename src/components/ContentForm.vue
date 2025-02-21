@@ -255,22 +255,28 @@ export default {
     };
 
 
-    const handleSubmit = async (values) => { // Receive validated values
-       // Map VeeValidate values to formData (for list inputs)
+    const handleSubmit = async (values, { resetForm }) => {
+      try {
+        // Map VeeValidate values to formData
         Object.keys(values).forEach(key => {
-            // Only update formData if it's not a list (list is handled separately)
-            if (!Array.isArray(formData[key])) {
-              formData[key] = values[key];
-            }
+          if (!Array.isArray(formData[key])) {
+            formData[key] = values[key];
+          }
         });
 
-        // Include instructions
+        // Include instructions and template
         const dataToSend = {
-          formData: { ...formData, instructions: instructions.value },
+          formData: { 
+            ...formData, 
+            instructions: instructions.value 
+          },
           selectedTemplate: props.selectedTemplate,
         };
 
-        emit('generate-content', dataToSend);
+        await emit('generate-content', dataToSend);
+      } catch (error) {
+        console.error('Form submission error:', error);
+      }
     };
 
     return {

@@ -91,6 +91,20 @@
   .btn:hover {
     transform: none !important;
   }
+
+  .auth-tab:hover {
+    background: none;
+  }
+
+  .btn:active {
+    transform: scale(0.98);
+  }
+
+  .auth-tab:active,
+  .btn-auth:active,
+  .btn-social:active {
+    opacity: 0.7;
+  }
 }
 
 /* Improved Mobile Navigation */
@@ -123,20 +137,41 @@
 
   /* Adjust button sizes for touch */
   .btn {
-    padding: 0.75rem 1rem;
-    font-size: 1rem;
-    min-height: 44px; /* Better touch targets */
-  }
-
-  /* Make form inputs more touch-friendly */
-  .form-control,
-  .form-select {
     min-height: 44px;
     font-size: 16px; /* Prevent iOS zoom */
   }
 
   textarea.form-control {
     min-height: 100px;
+  }
+}
+
+/* Auth Specific Responsive Styles */
+@media (max-width: 768px) {
+  .auth-container {
+    padding: 0;
+    background: white; /* Full white background on mobile */
+  }
+
+  .auth-card {
+    box-shadow: none;
+    border-radius: 0;
+  }
+
+  .auth-tabs {
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 10;
+  }
+
+  .form-floating > .form-control {
+    height: 48px; /* Larger touch targets */
+  }
+
+  .btn-social,
+  .btn-auth {
+    height: 48px;
   }
 }
 
@@ -168,5 +203,21 @@
   .preview-section {
     max-height: 60vh;
     overflow-y: auto;
+  }
+
+  .auth-container {
+    align-items: flex-start;
+    padding: 1rem;
+  }
+
+  .auth-card {
+    margin: 0 auto;
+  }
+}
+
+/* High Resolution Displays */
+@media (min-width: 1400px) {
+  .auth-card {
+    max-width: 450px;
   }
 }

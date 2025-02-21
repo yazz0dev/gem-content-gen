@@ -10,6 +10,31 @@ import { setDoc, doc } from 'firebase/firestore';
 import { db } from '@/firebase';
 const auth = getAuth();
 
+const handleAuthError = (error) => {
+  console.error('Auth error:', error);
+  
+  // Network connection errors
+  if (!navigator.onLine) {
+    throw new Error('No internet connection. Please check your network.');
+  }
+  
+  if (error.code === 'auth/network-request-failed') {
+    throw new Error('Connection failed. Please try again.');
+  }
+
+  // Common auth errors
+  const errorMessages = {
+    'auth/user-not-found': 'No account found with this email.',
+    'auth/wrong-password': 'Invalid email or password.',
+    'auth/email-already-in-use': 'This email is already registered.',
+    'auth/weak-password': 'Password should be at least 6 characters.',
+    'auth/invalid-email': 'Please enter a valid email address.',
+    'auth/too-many-requests': 'Too many attempts. Please try again later.',
+  };
+
+  throw new Error(errorMessages[error.code] || error.message || 'Authentication failed. Please try again.');
+};
+
 async function signup(email, password) {
   try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -21,15 +46,7 @@ async function signup(email, password) {
           generationCount: 0, // Initialize generation count.  *CRITICAL*
       });
   } catch (error) {
-      // Improve error handling
-      console.error("Signup Error:", error); // Log the full error
-      if (error.code === 'auth/weak-password') {
-          throw new Error('Password should be at least 6 characters.');
-      } else if (error.code === 'auth/email-already-in-use') {
-          throw new Error('The email address is already in use by another account.');
-      } else {
-          throw new Error("Signup failed. Please try again.");
-      }
+      throw handleAuthError(error);
   }
 }
 
@@ -37,12 +54,7 @@ async function login(email, password) {
   try {
       await signInWithEmailAndPassword(auth, email, password);
   } catch (error) {
-      // Improve error handling
-      console.error("Login Error:", error); // Log the full error
-      if (error.code === 'auth/invalid-credential') {
-          throw new Error("Login failed.  Please check your email and password.");
-      }
-      throw new Error('Login failed. Please try again later.');
+      throw handleAuthError(error);
   }
 }
 
@@ -50,8 +62,7 @@ async function signOutUser() {
   try {
       await signOut(auth);
   } catch (error) {
-      console.error("Sign Out Error:", error); // Log the full error
-      throw new Error('Sign out failed. Please try again later.');
+      throw handleAuthError(error);
   }
 }
 
@@ -59,12 +70,19 @@ async function sendPasswordResetEmail(email) {
   try {
       await firebaseSendPasswordResetEmail(auth, email);
   } catch (error) {
-     console.error("Password Reset Error:", error); // Log the full error
-    if (error.code === 'auth/user-not-found'){
-      throw new Error("User not found, check the email provided")
-    }
-      throw new Error('Password reset failed. Please try again.');
+     throw handleAuthError(error);
   }
 }
+
+// Add connection status monitoring
+export const initializeAuthStatusMonitoring = () => {
+  window.addEventListener('online', () => {
+    console.log('Connection restored');
+  });
+
+  window.addEventListener('offline', () => {
+    console.log('Connection lost');
+  });
+};
 
 export { signup, login, signOutUser, sendPasswordResetEmail };

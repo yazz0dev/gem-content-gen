@@ -1,5 +1,5 @@
 import { db } from '@/firebase';
-import { doc, getDoc, setDoc, updateDoc, collection, getDocs, increment, runTransaction  } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, collection, getDocs, increment, runTransaction, serverTimestamp  } from 'firebase/firestore';
 
 async function isAdmin(userId) {
     try {
@@ -13,87 +13,43 @@ async function isAdmin(userId) {
     }
 }
 
-async function canGenerateResume(userId) {
-    if (await isAdmin(userId)) {
-        return true; // Admins bypass the limit
-    }
-
-    const userDocRef = doc(db, "users", userId);
-    const userDocSnap = await getDoc(userDocRef);
-
-    if (userDocSnap.exists()) {
-        const userData = userDocSnap.data();
-        const lastGeneration = userData.lastGenerationDate;
-        const generationCount = userData.generationCount || 0; // Get the count, default to 0
-
-        if (!lastGeneration) {
-          return true;
-        }
-
-
-        const now = new Date();
-        const last = new Date(lastGeneration);
-        const diffInMilliseconds = now - last;
-        const diffInHours = diffInMilliseconds / (1000 * 60 * 60);
-
-        if (diffInHours >= 24) {
-            return true; // Allow generation, it's been 24 hours.
-        } else {
-            // Check if the user has exceeded the daily limit (even within 24 hours)
-            return generationCount < 1; // Limit to 1 generation per day
-        }
-
-    } else {
-        return true; // New user, allow generation
-    }
-}
-
-// Use Transaction For updating
-async function updateLastGenerationDate(userId) {
-  const userDocRef = doc(db, "users", userId);
-  const now = new Date();
-
+export async function canGenerateResume(userId) {
   try {
-    await runTransaction(db, async (transaction) => {
-      const userDocSnap = await transaction.get(userDocRef);
+    const userRef = doc(db, 'users', userId);
+    const userDoc = await getDoc(userRef);
+    
+    if (!userDoc.exists()) {
+      return true; // First time user
+    }
 
-      if (userDocSnap.exists()) {
-        const userData = userDocSnap.data();
-        const lastGeneration = userData.lastGenerationDate;
-        let generationCount = userData.generationCount || 0;
+    const lastGeneration = userDoc.data().lastGenerationDate?.toDate();
+    if (!lastGeneration) {
+      return true;
+    }
 
-        if (lastGeneration) {
-          const last = new Date(lastGeneration);
-          const diffInMilliseconds = now - last;
-          const diffInHours = diffInMilliseconds / (1000 * 60 * 60);
-
-          if (diffInHours >= 24) {
-            generationCount = 1; // Reset count
-          } else {
-            generationCount = increment(1); // Increment
-          }
-        } else {
-            generationCount = 1;
-        }
-         transaction.set(userDocRef, {
-            lastGenerationDate: now.getTime(),
-            generationCount: generationCount,
-          }, { merge: true }); // Use set with merge
-
-      } else {
-        // First Time
-        transaction.set(userDocRef, {
-          lastGenerationDate: now.getTime(),
-          generationCount: 1,
-        });
-      }
-    });
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const lastDate = new Date(lastGeneration.getFullYear(), lastGeneration.getMonth(), lastGeneration.getDate());
+    
+    return lastDate < today;
   } catch (error) {
-    console.error("Error updating last generation date:", error);
-    throw new Error("Failed to update generation date. Please try again.");
+    console.error('Error checking generation limit:', error);
+    throw new Error('Unable to check generation limit. Please try again.');
   }
 }
 
+// Use Transaction For updating
+export async function updateLastGenerationDate(userId) {
+  try {
+    const userRef = doc(db, 'users', userId);
+    await setDoc(userRef, {
+      lastGenerationDate: serverTimestamp()
+    }, { merge: true });
+  } catch (error) {
+    console.error('Error updating generation date:', error);
+    throw new Error('Unable to update generation date. Please try again.');
+  }
+}
 
 async function submitModelRating(modelName, ratings)
 {
@@ -230,4 +186,4 @@ export const checkModelRateLimit = async (modelName) => {
   }
 };
 
-export { isAdmin, canGenerateResume, updateLastGenerationDate, submitModelRating, fetchLeaderboardData, fetchModelRateLimits };
+export { isAdmin, submitModelRating, fetchLeaderboardData, fetchModelRateLimits };

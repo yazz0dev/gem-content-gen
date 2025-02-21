@@ -21,7 +21,7 @@
 </template>
 
 <script>
-import { RouterView, RouterLink } from 'vue-router';
+import { RouterView, RouterLink, useRouter } from 'vue-router';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/firebase';
 import { signOutUser } from '@/utils/auth'; // Import from the auth module
@@ -34,6 +34,7 @@ export default {
     RouterLink
   },
   setup() {
+    const router = useRouter();
     const user = ref(null);
     const authLoading = ref(true);
     const globalError = ref(''); // Add global error ref
@@ -57,8 +58,10 @@ export default {
     const handleSignOut = async () => {
       try {
         await signOutUser();
+        router.push('/'); // Navigate to landing page after sign out
       } catch (error) {
         console.error("Sign out error:", error);
+        globalError.value = "Failed to sign out. Please try again.";
       }
     };
 

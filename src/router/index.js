@@ -8,6 +8,22 @@ import GenerationView from '../views/GenerationView.vue'; // Import renamed view
 // Create a simple NotFound component
 const NotFound = { template: '<div>Not Found</div>' };
 
+// Create a promise to track auth state initialization
+let authInitialized = false;
+const waitForAuthInit = () => {
+  return new Promise(resolve => {
+    if (authInitialized) {
+      resolve();
+    } else {
+      const unsubscribe = auth.onAuthStateChanged(() => {
+        authInitialized = true;
+        unsubscribe();
+        resolve();
+      });
+    }
+  });
+};
+
 const routes = [
   {
     path: '/',
@@ -50,15 +66,38 @@ const router = createRouter({
   routes
 });
 
-router.beforeEach((to, from, next) => {
-  const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
+router.beforeEach(async (to, from, next) => {
+  // Wait for auth to initialize before any navigation
+  await waitForAuthInit();
   const currentUser = auth.currentUser;
 
-  if (requiresAuth && !currentUser) {
-    next('/auth');
-  } else {
+  // Handle auth page access
+  if (to.path === '/auth') {
+    if (currentUser) {
+      next('/generate');
+      return;
+    }
     next();
+    return;
   }
+
+  // Handle protected routes
+  if (to.matched.some(record => record.meta.requiresAuth)) {
+    if (!currentUser) {
+      next('/');
+      return;
+    }
+    next();
+    return;
+  }
+
+  // Handle landing page
+  if (to.path === '/' && currentUser) {
+    next('/generate');
+    return;
+  }
+
+  next();
 });
 
 export default router;

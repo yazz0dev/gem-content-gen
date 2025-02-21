@@ -59,7 +59,10 @@
          <!-- Template Selection -->
          <div v-if="currentStep === 2" class="step-content">
            <TemplateSelector @template-selected="handleTemplateSelection" />
-           <div class="d-flex justify-content-end mt-3">
+           <div class="d-flex justify-content-between mt-3">
+             <button @click="previousStep" class="btn btn-secondary">
+               <i class="bi bi-arrow-left me-2"></i> Back
+             </button>
              <button @click="nextStep" class="btn btn-primary" :disabled="!selectedTemplate">
                Next <i class="bi bi-arrow-right ms-2"></i>
              </button>
@@ -70,8 +73,7 @@
          <div v-if="currentStep === 3" class="step-content">
            <div class="model-selector-container">
              <h3 class="section-title">Choose AI Model</h3>
-             <div class="model-grid">
-              <!--  v-model Used Here -->
+             <div class="model-grid horizontal">
                <ModelSelector :models="availableModels" v-model:modelValue="selectedModel" />
              </div>
              <div class="d-flex justify-content-between mt-4">
@@ -148,6 +150,7 @@
  import LoadingSpinner from '@/components/LoadingSpinner.vue';
  import RatingComponent from '@/components/RatingComponent.vue';
  import ContentForm from '@/components/ContentForm.vue';
+ import ModelSelector from '@/components/ModelSelector.vue'; // Add this import
  import { auth } from '@/firebase';
  import { canGenerateResume, updateLastGenerationDate } from '@/utils/firebaseUtils';
  import { generateContent } from '@/utils/generation';
@@ -161,6 +164,7 @@
      LoadingSpinner,
      RatingComponent,
      ContentForm,
+     ModelSelector, // Add this component
    },
    setup() {
      const user = ref(auth.currentUser);
@@ -263,7 +267,7 @@
          {
          id: 'social-ad-copy',
          name: 'Social Media Ad Copy',
-         icon: 'bi bi-badge-ad', // Example icon
+         icon: 'bi bi-badge-ad', 
          description: 'Write short, persuasive text for your social media ads.',
          fields: [
            { name: 'platform', label: 'Platform', type: 'select', required: true,
@@ -277,7 +281,7 @@
        {
      id: 'email-marketing',
      name: 'Email Marketing',
-     icon: 'bi bi-envelope', // Example icon
+     icon: 'bi bi-envelope', 
      description: 'Create effective email marketing content.',
      fields: [
        { name: 'emailType', label: 'Email Type', type: 'select', required: true, options: ['Newsletter', 'Promotional', 'Transactional'] },
@@ -302,7 +306,7 @@
      {
      id: 'product-descriptions',
      name: 'Product Descriptions',
-     icon: 'bi bi-box', // Example icon
+     icon: 'bi bi-box', 
      description: 'Craft compelling descriptions for your products.',
      fields: [
          { name: 'productName', label: 'Product Name', type: 'text', required: true },
@@ -314,7 +318,7 @@
      {
      id: 'youtube-content',
      name: 'YouTube Titles/Descriptions',
-     icon: 'bi bi-youtube', // Example icon
+     icon: 'bi bi-youtube', 
      description: 'Generate eye-catching YouTube titles and descriptions.',
      fields: [
        { name: 'videoTopic', label: 'Video Topic', type: 'text', required: true },
@@ -420,31 +424,47 @@
  
  
      const handleGenerateContent = async (formData) => {
+       console.log('Generate button clicked', formData);
        generationError.value = ''; // Clear previous error
-       if (!validateForm() || isGenerating.value) return;
- 
+       
+       if (!validateForm() || isGenerating.value) {
+         console.log('Form validation failed or generation in progress');
+         return;
+       }
+   
        isGenerating.value = true;
        const userId = auth.currentUser?.uid;
- 
+   
        try {
-         if (!userId || !(await canGenerateResume(userId))) {
+         if (!userId) {
+           throw new Error('User not authenticated');
+         }
+   
+         if (!(await canGenerateResume(userId))) {
            throw new Error('Daily generation limit reached. Please try again tomorrow.');
          }
-         //Corrected Call
+   
+         console.log('Calling generateContent with:', {
+           formData,
+           template: selectedTemplate.value,
+           model: selectedModel.value,
+           contentType: selectedContentType.value
+         });
+   
          const result = await generateContent(
-           formData.formData, // Pass formData directly
+           formData.formData,
            selectedTemplate.value,
            selectedModel.value,
            selectedContentType.value
          );
- 
-         generatedContent.value = result.html; // Access .html property
- 
+   
+         console.log('Generation result:', result);
+         generatedContent.value = result.html;
          await updateLastGenerationDate(userId);
          showRating.value = true;
        } catch (error) {
          console.error('Generation error:', error);
-         generationError.value = error.message; // Set the error message
+         generationError.value = error.message;
        } finally {
          isGenerating.value = false;
        }
@@ -732,5 +752,18 @@
   .type-icon {
     font-size: 2rem;
   }
+}
+
+.model-grid.horizontal {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: 1rem;
+  padding: 1rem 0;
+}
+
+.model-grid.horizontal .model-option {
+  flex: 0 0 300px;
+  margin-right: 1rem;
 }
 </style>

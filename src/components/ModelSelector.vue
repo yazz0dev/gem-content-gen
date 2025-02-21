@@ -1,17 +1,25 @@
 <template>
   <div class="model-selector-wrapper">
     <h3 class="text-center text-white mb-3">Select a Model</h3>
-     <p v-if="rateLimitError" class="text-danger text-center">{{ rateLimitError }}</p>
+    <p v-if="rateLimitError" class="text-danger text-center">{{ rateLimitError }}</p>
     <div class="model-options-grid">
       <div v-for="model in models"
-           :key="model.name"
-           @click="!model.isRateLimited ? selectModel(model.name) : null"
-           :class="['model-option', { 'selected': modelValue === model.name, 'rate-limited': model.isRateLimited }]"
+           :key="model.id"
+           @click="!model.isRateLimited ? selectModel(model.id) : null"
+           :class="['model-option', { 'selected': modelValue === model.id, 'rate-limited': model.isRateLimited }]"
            :title="model.isRateLimited ? 'This model is currently rate-limited. Please try again later.' : ''">
-        <h4 class="model-name">{{ model.displayName }}</h4>
-        <div class="model-stats">
-          <span class="quality">Quality: {{ model.quality }}</span>
-          <span class="speed">Speed: {{ model.speed }}</span>
+        <div class="model-info">
+          <i :class="model.icon"></i>
+          <h4 class="model-name">{{ model.name }}</h4>
+          <p class="model-description">{{ model.description }}</p>
+          <div class="model-stats">
+            <span class="model-rating">
+              <i class="bi bi-star-fill"></i> {{ model.rating }}
+            </span>
+            <span class="model-speed">
+              {{ model.speed }}
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -29,18 +37,18 @@ export default {
       type: Array,
       required: true,
     },
-    modelValue: { // Changed to modelValue for v-model
-        type: String,
-        required: true,
+    modelValue: {
+      type: String,
+      required: true,
     },
   },
+  emits: ['update:modelValue'],
   setup(props, { emit }) {
     const modelStatus = ref(new Map());
-    const rateLimitError = ref(''); // Added error ref
+    const rateLimitError = ref('');
 
-    // Watch for changes and check rate limits
     watchEffect(async () => {
-      rateLimitError.value = ''; // Clear previous error
+      rateLimitError.value = '';
       try {
         for (const model of props.models) {
           const isLimited = await checkModelRateLimit(model.name);
@@ -48,38 +56,37 @@ export default {
         }
       } catch (error) {
         console.error('Error checking rate limits:', error);
-        rateLimitError.value = 'Error checking model availability. Please try again later.'; // User-facing error
-        // Set all models as not rate limited on error (or handle differently based on your needs)
+        rateLimitError.value = 'Error checking model availability. Please try again later.';
         props.models.forEach(model => {
           modelStatus.value.set(model.name, false);
         });
       }
     });
 
-    const selectModel = (modelName) => {
-      if (!modelStatus.value.get(modelName)) {
-        emit('update:modelValue', modelName); // Use update:modelValue for v-model
+    const selectModel = (modelId) => {
+      if (!modelStatus.value.get(modelId)) {
+        emit('update:modelValue', modelId);
       }
     };
 
     return {
       selectModel,
       modelStatus,
-      rateLimitError // Expose the error
+      rateLimitError
     };
   },
 };
 </script>
+
 <style scoped>
-/* Same as Before */
 .model-selector-wrapper {
-  max-width: 1000px; /* Increased from 800px */
+  max-width: 1000px;
   margin: 0 auto;
 }
 
 .model-options-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr); /* Force 4 columns */
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 1rem;
   justify-items: center;
   padding: 1rem;
@@ -93,16 +100,18 @@ export default {
   padding: 1rem;
   border-radius: 12px;
   transition: all 0.2s ease;
+  cursor: pointer;
 }
 
 .model-option:hover {
-  transform: translateY(-5px);
-  box-shadow: var(--shadow-lg);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
   background: white;
 }
 
 .model-option.selected {
-  background: var(--primary-color);
+  border-color: var(--primary-color);
+  background: linear-gradient(to bottom right, rgba(37, 99, 235, 0.1), rgba(37, 99, 235, 0.05));
   color: white;
   border: 2px solid rgba(255, 255, 255, 0.2);
 }
@@ -113,22 +122,45 @@ export default {
   border-color: white;
 }
 
+.model-info {
+  text-align: center;
+}
+
+.model-info i {
+  font-size: 2rem;
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+}
+
 .model-name {
   font-size: 1rem;
   font-weight: 600;
   margin-bottom: 0.5rem;
 }
 
+.model-description {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
 .model-stats {
-  font-size: 0.875rem;
   display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+  justify-content: center;
+  gap: 1rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.model-rating i {
+  color: #fbbf24;
+  font-size: 1rem;
+  margin-right: 0.25rem;
 }
 
 .rate-limited {
-  opacity: 0.5; /* Visually dim rate-limited models */
-  pointer-events: none; /* Disable clicks on rate-limited models */
+  opacity: 0.5;
+  pointer-events: none;
   cursor: not-allowed;
 }
 </style>

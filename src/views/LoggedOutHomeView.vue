@@ -1,71 +1,77 @@
 <template>
-    <div class="page-container">
-      <div class="hero-section mb-5">
-        <div class="container">
-          <div class="row align-items-center">
-            <div class="col-md-6">
-              <h1 class="hero-title">Create Professional Content Instantly</h1>
-              <p class="hero-description">Generate high-quality resumes, cover letters, social media posts, and more using advanced AI models.</p>
-              <button @click="$router.push('/auth')" class="cta-button">
-                Get Started
-              </button>
-  
-               <!-- Feature Highlights (Example - Expand) -->
-              <div class="features-grid mt-4">
-                <div class="feature-item">
-                  <i class="bi bi-file-earmark-text me-2"></i> Resumes
-                </div>
-                <div class="feature-item">
-                  <i class="bi bi-envelope-open me-2"></i> Cover Letters
-                </div>
-                <div class="feature-item">
-                  <i class="bi bi-instagram me-2"></i> Social Media
-                </div>
-                <!-- Add more feature items -->
-              </div>
-            </div>
-            <div class="col-md-6">
-              <!-- Add illustration or image here (Placeholder) -->
-              <img src="/path/to/your/image.png" alt="Content Generation Illustration" class="img-fluid">
-            </div>
+  <div class="logged-out-home">
+    <section class="landing-hero">
+      <div class="hero-content">
+        <h1 class="hero-title">Create Professional Content in Minutes</h1>
+        <p class="hero-description">
+          Generate high-quality resumes, cover letters, and more using advanced AI models.
+          Start creating professional content today.
+        </p>
+        <div class="cta-group">
+          <button
+            @click="handleGetStarted"
+            class="btn cta-button cta-primary"
+          >Get Started</button>
+          <a href="#features" class="btn cta-button cta-secondary">Learn More</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="features" class="feature-section">
+      <div class="container">
+        <div class="feature-grid">
+          <div class="feature-card">
+            <i class="bi bi-file-earmark-text display-4 mb-3"></i>
+            <h3>Professional Templates</h3>
+            <p>Choose from a variety of professionally designed templates.</p>
           </div>
-  
-            <!-- More Info Section (Optional, but recommended) -->
-          <div class="row mt-5">
-             <div class="col-12">
-                  <h2>Key Features</h2>
-                  <p>Explore the power of AI-driven content creation:</p>
-              </div>
-  
-              <div class="feature-cards">
-  
-                <div class="feature-card">
-                  <h3 class="feature-title">Multiple Content Types</h3>
-                  <p class="feature-description">Create various types of content including resumes, cover letters, and social media posts.</p>
-                </div>
-  
-                <div class="feature-card">
-                  <h3 class="feature-title">Customizable Templates</h3>
-                  <p class="feature-description">Choose from different design templates.</p>
-                </div>
-  
-                <div class="feature-card">
-                  <h3 class="feature-title">Powerful AI Models</h3>
-                  <p class="feature-description">Leverage top-tier AI models for high-quality results.</p>
-                </div>
-            </div>
+          <div class="feature-card">
+            <i class="bi bi-magic display-4 mb-3"></i>
+            <h3>AI-Powered</h3>
+            <p>Leverage advanced AI models to generate perfect content.</p>
+          </div>
+          <div class="feature-card">
+            <i class="bi bi-lightning-charge display-4 mb-3"></i>
+            <h3>Quick & Easy</h3>
+            <p>Create professional content in minutes, not hours.</p>
           </div>
         </div>
       </div>
-    </div>
-  </template>
-  
-  <script>
-  export default {
-    name: 'LoggedOutHomeView',
-  };
-  </script>
-  
-  <style scoped>
-  /* You can move relevant styles from HomeView.vue (hero section) to here */
-  </style>
+    </section>
+  </div>
+</template>
+
+<script>
+import { useRouter } from 'vue-router';
+import { onMounted } from 'vue';
+import { initializeAuthStatusMonitoring } from '@/utils/auth';
+import { auth } from '@/firebase';
+
+export default {
+  name: 'LoggedOutHomeView',
+  setup() {
+    const router = useRouter();
+
+    const handleGetStarted = () => {
+      if (auth.currentUser) {
+        router.push('/generate');
+      } else {
+        router.push('/auth');
+      }
+    };
+
+    onMounted(() => {
+      initializeAuthStatusMonitoring();
+    });
+
+    return {
+      handleGetStarted
+    };
+  }
+};
+</script>
+
+<style>
+@import '@/assets/css/landing.css';
+</style>
+
