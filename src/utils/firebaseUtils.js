@@ -1,13 +1,17 @@
 // src/utils/firebaseUtils.js
 import { db } from '@/firebase';
 import { doc, getDoc, setDoc, updateDoc, collection, getDocs, increment, serverTimestamp  } from 'firebase/firestore';
-import { MODEL_LIMITS } from './constants'; // Import the limits
+import { MODEL_LIMITS } from './constants';
 
-
-
-// Checks if the user can generate (daily limit)
+// Checks if the user can generate (daily limit), BYPASSES for admins
 export async function canGenerateResume(userId) {
   try {
+    // Admin check first - if admin, always return true
+    if (userId && ['uid'].includes(userId)) {
+      return true;
+    }
+
+    // For non-admins, check generation limit
     const userRef = doc(db, 'users', userId);
     const userDoc = await getDoc(userRef);
 
@@ -20,7 +24,7 @@ export async function canGenerateResume(userId) {
 
     // Check if lastGenerationDate exists and is a Timestamp object
     if (!lastGeneration || typeof lastGeneration.toDate !== 'function') {
-        return true; // Treat as if the user can generate
+        return true;
     }
 
     const lastGenerationDate = lastGeneration.toDate();
@@ -35,8 +39,13 @@ export async function canGenerateResume(userId) {
   }
 }
 
-// Updates the user's last generation date
+// Updates the user's last generation date (ONLY for non-admins)
 export async function updateLastGenerationDate(userId) {
+  // Skip update for admins
+  if (userId && ['uid'].includes(userId)) {
+    return;
+  }
+
   try {
     const userRef = doc(db, 'users', userId);
     await setDoc(userRef, {
@@ -66,7 +75,6 @@ async function submitModelRating(modelName, ratings) {
   }
 }
 
-// Correctly fetches leaderboard data, including availability
 async function fetchLeaderboardData() {
   try {
     const leaderboardData = [];
@@ -79,31 +87,30 @@ async function fetchLeaderboardData() {
       if (['gemini-2.0-pro-exp-02-05', 'gemini-2.0-flash-thinking-exp-01-21', 'gemini-2.0-flash', 'gemini-2.0-flash-lite-preview-02-05'].includes(modelId)) {
         const data = docSnapshot.data();
         const {
-          isAvailable = false, // Default if not present
           contentAccuracy = 0,
           formatting = 0,
           overallQuality = 0,
           count = 0
-        } = data; // Destructure *all* fields, with defaults
+        } = data;
 
         const totalScore = contentAccuracy + formatting + overallQuality;
-        const averageRating = count > 0 ? (totalScore / (count * 3)) * 5 : 0; // Now dividing by (count * 3)
+        const averageRating = count > 0 ? (totalScore / (count * 3)) * 5 : 0;
 
         // Get current usage from localStorage
-        const { currentRPM, currentTPM } = getModelUsage(modelId);
+        const { currentRPM, currentTPM, currentRPD } = getModelUsage(modelId);
 
         // Determine availability based on rate limits
-        const modelLimits = MODEL_LIMITS[modelId] || {}; // Default to empty object if no limits
-        const isModelAvailable = !((currentRPM >= modelLimits.rpm) || (currentTPM >= modelLimits.tpm));
-
+        const modelLimits = MODEL_LIMITS[modelId] || {};
+        const isModelAvailable = !((currentRPM >= modelLimits.rpm) || (currentTPM >= modelLimits.tpm) || (currentRPD >= modelLimits.rpd));
 
         leaderboardData.push({
           id: modelId,
           averageRating,
           count,
-          rpm: currentRPM,  // Current usage
-          tpm: currentTPM,  // Current usage
-          isAvailable: isModelAvailable, // Set availability
+          rpm: currentRPM,
+          tpm: currentTPM,
+          rpd: currentRPD,
+          isAvailable: isModelAvailable,
         });
       }
     }
@@ -116,8 +123,7 @@ async function fetchLeaderboardData() {
   }
 }
 
-
-// --- Client-Side Rate Limiting ---
+// --- Client-Side Rate Limiting (Modified for Admin Bypass) ---
 
 function getModelUsage(modelName) {
     const usageKey = `modelUsage_${modelName}`;
@@ -146,29 +152,30 @@ function getModelUsage(modelName) {
     return usage;
 }
 
+// NO ADMIN CHECK HERE.  Admin check is done in checkModelRateLimit.
 function updateModelUsage(modelName, tokensUsed) {
     const usage = getModelUsage(modelName);
     usage.currentRPM += 1;
     usage.currentTPM += tokensUsed;
-    usage.currentRPD +=1;
+    usage.currentRPD += 1;
     localStorage.setItem(`modelUsage_${modelName}`, JSON.stringify(usage));
 }
 
-// Updated checkModelRateLimit to use client-side logic
-export const checkModelRateLimit = async (modelName) => {
-    const modelLimits = MODEL_LIMITS[modelName];
-    if (!modelLimits) {
-      return false; // Model not found, not rate limited
-    }
+// checkModelRateLimit now properly checks for admin
+export const checkModelRateLimit = async (modelName, userId) => {
+  // Admin bypass - if admin, return false (not rate limited)
+  if (userId && ['uid'].includes(userId)) {
+    return false;
+  }
 
-    const { rpm, tpm, rpd } = modelLimits;
-    const { currentRPM, currentTPM, currentRPD } = getModelUsage(modelName);
-    // console.log(currentRPM, currentTPM, currentRPD); //for debug
-    if (currentRPM >= rpm || currentTPM >= tpm || currentRPD >= rpd) {
-        return true; // Rate limited
-    }
+  const modelLimits = MODEL_LIMITS[modelName];
+  if (!modelLimits) {
+    return false;
+  }
 
-    return false; // Not rate limited
+  const { rpm, tpm, rpd } = modelLimits;
+  const { currentRPM, currentTPM, currentRPD } = getModelUsage(modelName);
+  return currentRPM >= rpm || currentTPM >= tpm || currentRPD >= rpd;
 };
 
 export { submitModelRating, fetchLeaderboardData, updateModelUsage };

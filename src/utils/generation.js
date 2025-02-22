@@ -1,7 +1,8 @@
 // src/utils/generation.js
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { updateModelUsage } from "./firebaseUtils"; // Import updateModelUsage
-
+import { updateModelUsage } from "./firebaseUtils";
+import { encode } from 'gpt-tokenizer'; // Import the tokenizer
+import { auth } from '@/firebase'; // Import Firebase auth
 
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
 
@@ -14,13 +15,23 @@ async function generateContent(formData, selectedTemplate, selectedModel, conten
         const response = await result.response;
         const generatedHtml = extractHtmlFromResponse(response.text());
 
-        // Count tokens and update usage *after* successful generation
-        updateModelUsage(selectedModel, response.promptFeedback?.safetyRatings?.length || 0);  //Simple token count (not accurate, but close enough for rate limiting)
+        // Get current user ID
+        const userId = auth.currentUser?.uid;
+
+        // Only update usage stats for non-admins
+        if (userId && userId !== 'JZHhTYr45NOiIdLbaSaGIDyHT5R2') {
+            const inputText = prompt;
+            const outputText = response.text();
+            const inputTokenCount = encode(inputText).length;
+            const outputTokenCount = encode(outputText).length;
+            const totalTokens = inputTokenCount + outputTokenCount;
+            updateModelUsage(selectedModel, totalTokens);
+        }
+
         return { html: generatedHtml };
 
     } catch (error) {
         console.error("Error generating content:", error);
-        // Provide more specific error messages based on the error type
         if (error.message.includes("400")) {
             throw new Error("Invalid request to the AI model. Please check your input data.");
         } else if (error.message.includes("429")) {
@@ -32,6 +43,8 @@ async function generateContent(formData, selectedTemplate, selectedModel, conten
         }
     }
 }
+
+// ... (rest of your generatePrompt and extractHtmlFromResponse functions remain unchanged) ...
 function generatePrompt(formData, selectedTemplate, contentType) {
     let prompt = `Generate HTML for a ${contentType} based on the following information.  Apply the CSS class "${selectedTemplate.toLowerCase().replace(/\s+/g, '-')}" to the outermost container element of the generated HTML. Output *only* valid HTML code. Do *not* include any introductory or concluding phrases.
 
@@ -68,11 +81,9 @@ ${formData.contactInfo ? `**Contact Information:** ${formData.contactInfo}\n` : 
         prompt += `
 **Social Media Post Information:**
 ${formData.platform ? `**Platform:** ${formData.platform}\n` : ''}
-${formData.topic ? `**Topic:** ${formData.topic}\n` : ''}
-${formData.targetAudience ? `**Target Audience:** ${formData.targetAudience}\n` : ''}
-${formData.tone ? `**Tone:** ${formData.tone}\n` : ''}
-${formData.keyPoints ? `**Key Points:**\n${formData.keyPoints}\n` : ''}
-${formData.callToAction ? `**Call to Action:** ${formData.callToAction}\n` : ''}
+${formData.content ? `**Post Content:** ${formData.content}\n` : ''}
+${formData.hashtags ? `**Hashtags:**\n${formData.hashtags.map(tag => `- ${tag}`).join('\n')}\n` : ''}
+${formData.mentions ? `**Mentions:**\n${formData.mentions.map(mention => `- ${mention}`).join('\n')}\n` : ''}
 `;
 
     } else if (contentType === 'social-ad-copy') {
@@ -148,7 +159,7 @@ ${formData.targetAudience ? `**Target Audience:** ${formData.targetAudience}\n` 
 function extractHtmlFromResponse(responseText) {
     //Basic markdown
     let html = responseText
-        .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+        .replace(/^### (.*$)/gim, '<h3>$1</h3')
         .replace(/^## (.*$)/gim, '<h2>$1</h2>')
         .replace(/^# (.*$)/gim, '<h1>$1</h1>')
         .replace(/^\* (.*$)/gim, '<li>$1</li>')

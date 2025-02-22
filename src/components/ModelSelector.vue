@@ -1,4 +1,3 @@
-<!-- src/components/ModelSelector.vue -->
 <template>
   <div class="model-selector">
     <div class="model-options-wrapper">
@@ -29,8 +28,8 @@
 
 <script>
 import { ref, watchEffect } from 'vue';
-// Removed: import { checkModelRateLimit } from '@/utils/firebaseUtils'; // No longer needed here
 import { checkModelRateLimit } from '@/utils/firebaseUtils'; // Import updated checkModelRateLimit
+import { auth } from '@/firebase'; // Import auth
 
 export default {
   name: 'ModelSelector',
@@ -51,15 +50,16 @@ export default {
 
     watchEffect(async () => {
       rateLimitError.value = '';
+      const user = auth.currentUser; // Get the current user
+      const userId = user ? user.uid : null; // Get the user ID, or null if not logged in
       try {
         for (const model of props.models) {
-          const isLimited = await checkModelRateLimit(model.name);
-          modelStatus.value.set(model.name, isLimited); // Directly use the result
+          const isLimited = await checkModelRateLimit(model.name, userId); // Pass userId
+          modelStatus.value.set(model.name, isLimited);
         }
       } catch (error) {
         console.error('Error checking rate limits:', error);
         rateLimitError.value = 'Error checking model availability. Please try again later.';
-        //  Assume models are NOT rate-limited on error.  You might choose to handle this differently.
         props.models.forEach(model => {
           modelStatus.value.set(model.name, false);
         });

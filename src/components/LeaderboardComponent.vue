@@ -15,9 +15,16 @@
             <th scope="col">Model</th>
             <th scope="col" class="text-center">Avg. Rating</th>
             <th scope="col" class="text-center">Ratings</th>
+            <th scope="col" class="text-center" colspan="3">Usage</th>  <th scope="col" class="text-center">Available</th>
+          </tr>
+          <tr>
+            <th></th>
+            <th></th>
+            <th></th>
             <th scope="col" class="text-center">RPM</th>
             <th scope="col" class="text-center">TPM</th>
-            <th scope="col" class="text-center">Available</th>
+            <th scope="col" class="text-center">RPD</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -28,7 +35,6 @@
             </td>
             <td class="rating-cell text-center">
               <span class="rating-stars">
-                <!-- Display stars based on averageRating -->
                 <template v-for="n in 5" :key="n">
                   <i :class="getStarClass(model.averageRating, n)" class="bi bi-star-fill"></i>
                 </template>
@@ -36,8 +42,10 @@
               <span class="rating-value">{{ model.averageRating.toFixed(2) }}</span>
             </td>
             <td class="text-center">{{ model.count }}</td>
-            <td class="text-center">{{ model.rpm }}</td>
-            <td class="text-center">{{ model.tpm }}</td>
+             <td class="text-center">{{ model.rpm }} / {{ getModelLimit(model.id, 'rpm') }}</td>
+            <td class="text-center">{{ model.tpm }} / {{ getModelLimit(model.id, 'tpm') }}</td>
+            <td class="text-center">{{ model.rpd }} / {{ getModelLimit(model.id, 'rpd') }}</td>
+
             <td class="text-center">
               <span v-if="model.isAvailable" class="badge bg-success">Yes</span>
               <span v-else class="badge bg-danger">No</span>
@@ -52,6 +60,7 @@
 <script>
 import { ref, onMounted } from 'vue';
 import { fetchLeaderboardData } from '@/utils/firebaseUtils';
+import { MODEL_LIMITS } from '@/utils/constants'; // Import MODEL_LIMITS
 
 export default {
   name: 'LeaderboardComponent',
@@ -80,7 +89,12 @@ export default {
         }
     }
 
-    return { leaderboardData, loading, error, getStarClass };
+      const getModelLimit = (modelId, limitType) => {
+      const modelLimits = MODEL_LIMITS[modelId];
+      return modelLimits ? modelLimits[limitType] : 'N/A'; // Return limit or 'N/A'
+    };
+
+    return { leaderboardData, loading, error, getStarClass, getModelLimit };
   }
 };
 </script>
@@ -133,6 +147,7 @@ export default {
   padding: var(--spacing-sm) var(--spacing-md);
   border-bottom: 1px solid #dee2e6; /* Subtle border */
   vertical-align: middle; /* Vertically center content */
+  text-align: center;
 }
 
 .leaderboard-table thead th {
@@ -154,6 +169,7 @@ export default {
 .model-name {
   font-weight: 500;
   color: var(--text-primary);
+  text-align: left;
 }
 
 .rating-cell {

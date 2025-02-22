@@ -322,7 +322,13 @@
 
     try {
         if (!userId) throw new Error('User not authenticated');
-        if (!(await canGenerateResume(userId))) throw new Error('Daily generation limit reached.');
+        
+        // Use exact UID match for admin check
+        if (userId !== 'JZHhTYr45NOiIdLbaSaGIDyHT5R2') {
+            if (!(await canGenerateResume(userId))) {
+                throw new Error('Daily generation limit reached.');
+            }
+        }
 
         const result = await generateContent(
             formData.formData,
@@ -331,7 +337,12 @@
             selectedContentType.value
         );
         generatedContent.value = result.html;
-        await updateLastGenerationDate(userId);
+
+        // Only update generation date for non-admins
+        if (userId !== 'JZHhTYr45NOiIdLbaSaGIDyHT5R2') {
+            await updateLastGenerationDate(userId);
+        }
+        
         showRating.value = true;
 
     } catch (error) {
