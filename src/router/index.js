@@ -1,3 +1,4 @@
+// src/router/index.js
 import { createRouter, createWebHistory } from 'vue-router'
 import AuthForm from '@/components/AuthForm.vue';
 import LeaderboardComponent from '@/components/LeaderboardComponent.vue';

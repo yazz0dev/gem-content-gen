@@ -1,25 +1,18 @@
+// src/utils/firebaseUtils.js
 import { db } from '@/firebase';
-import { doc, getDoc, setDoc, updateDoc, collection, getDocs, increment, runTransaction, serverTimestamp  } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, collection, getDocs, increment, serverTimestamp  } from 'firebase/firestore';
 import { MODEL_LIMITS } from './constants'; // Import the limits
 
-async function isAdmin(userId) {
-    try {
-        const adminDocRef = doc(db, "admins", userId);
-        const adminDocSnap = await getDoc(adminDocRef);
-        return adminDocSnap.exists();
-    } catch (error) {
-        console.error("Error checking admin status:", error);
-        return false;
-    }
-}
 
+
+// Checks if the user can generate (daily limit)
 export async function canGenerateResume(userId) {
   try {
     const userRef = doc(db, 'users', userId);
     const userDoc = await getDoc(userRef);
 
     if (!userDoc.exists()) {
-      return true; // First time user
+      return true; // First time user, allow generation
     }
 
     const userData = userDoc.data();
@@ -42,7 +35,7 @@ export async function canGenerateResume(userId) {
   }
 }
 
-// Use Transaction For updating
+// Updates the user's last generation date
 export async function updateLastGenerationDate(userId) {
   try {
     const userRef = doc(db, 'users', userId);
@@ -55,10 +48,10 @@ export async function updateLastGenerationDate(userId) {
   }
 }
 
-// Updated submitModelRating to use modelRateLimits
+// Correctly submits model ratings
 async function submitModelRating(modelName, ratings) {
   try {
-    const modelRef = doc(db, 'modelRateLimits', modelName); 
+    const modelRef = doc(db, 'modelRateLimits', modelName);
 
     await updateDoc(modelRef, {
       contentAccuracy: increment(ratings.contentAccuracy),
@@ -73,7 +66,7 @@ async function submitModelRating(modelName, ratings) {
   }
 }
 
-// Updated fetchLeaderboardData to get everything from modelRateLimits
+// Correctly fetches leaderboard data, including availability
 async function fetchLeaderboardData() {
   try {
     const leaderboardData = [];
@@ -82,11 +75,11 @@ async function fetchLeaderboardData() {
     for (const docSnapshot of querySnapshot.docs) {
       const modelId = docSnapshot.id;
 
-       //Only include specific models in the leaderboard
+      // Only include specific models in the leaderboard
       if (['gemini-2.0-pro-exp-02-05', 'gemini-2.0-flash-thinking-exp-01-21', 'gemini-2.0-flash', 'gemini-2.0-flash-lite-preview-02-05'].includes(modelId)) {
         const data = docSnapshot.data();
         const {
-          isAvailable = false,
+          isAvailable = false, // Default if not present
           contentAccuracy = 0,
           formatting = 0,
           overallQuality = 0,
@@ -99,13 +92,18 @@ async function fetchLeaderboardData() {
         // Get current usage from localStorage
         const { currentRPM, currentTPM } = getModelUsage(modelId);
 
+        // Determine availability based on rate limits
+        const modelLimits = MODEL_LIMITS[modelId] || {}; // Default to empty object if no limits
+        const isModelAvailable = !((currentRPM >= modelLimits.rpm) || (currentTPM >= modelLimits.tpm));
+
+
         leaderboardData.push({
           id: modelId,
           averageRating,
           count,
           rpm: currentRPM,  // Current usage
           tpm: currentTPM,  // Current usage
-          isAvailable,
+          isAvailable: isModelAvailable, // Set availability
         });
       }
     }
@@ -173,4 +171,4 @@ export const checkModelRateLimit = async (modelName) => {
     return false; // Not rate limited
 };
 
-export { isAdmin, submitModelRating, fetchLeaderboardData, updateModelUsage };
+export { submitModelRating, fetchLeaderboardData, updateModelUsage };

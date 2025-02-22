@@ -1,3 +1,4 @@
+<!-- src/components/TemplateSelector.vue -->
 <template>
   <div class="mb-4">
     <h2 class="text-xl font-weight-bold mb-3">Select a Template</h2>

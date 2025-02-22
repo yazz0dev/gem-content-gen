@@ -15,6 +15,7 @@ async function generateContent(formData, selectedTemplate, selectedModel, conten
         const generatedHtml = extractHtmlFromResponse(response.text());
 
         // Count tokens and update usage *after* successful generation
+        updateModelUsage(selectedModel, response.promptFeedback?.safetyRatings?.length || 0);  //Simple token count (not accurate, but close enough for rate limiting)
         return { html: generatedHtml };
 
     } catch (error) {

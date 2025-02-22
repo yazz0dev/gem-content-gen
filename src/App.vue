@@ -1,3 +1,4 @@
+<!-- src/App.vue -->
 <template>
   <div id="app" class="bg-light min-vh-100 d-flex flex-column">
     <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">

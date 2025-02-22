@@ -1,3 +1,4 @@
+<!-- src/components/ModelSelector.vue -->
 <template>
   <div class="model-selector">
     <div class="model-options-wrapper">

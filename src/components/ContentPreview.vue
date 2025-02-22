@@ -1,4 +1,4 @@
-// src/components/ContentPreview.vue (UPDATED)
+<!-- src/components/ContentPreview.vue -->
 <template>
   <div class="content-preview">
     <div class="preview-actions mb-3">

@@ -1,3 +1,4 @@
+<!-- src/components/ContentForm.vue -->
 <template>
   <div class="p-4 border rounded shadow-sm bg-white">
     <h2 class="text-2xl font-weight-bold mb-4">{{ formTitle }}</h2>
@@ -217,7 +218,7 @@ export default {
       }
     });
 
-       // Initialize formData and formSchema
+              // Initialize formData and formSchema
     watch(() => props.contentType, (newContentType) => {
       // Clear existing formData
       Object.keys(formData).forEach(key => delete formData[key]);

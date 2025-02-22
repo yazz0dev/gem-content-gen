@@ -1,3 +1,4 @@
+<!-- src/views/LoggedOutHomeView.vue -->
 <template>
   <div class="logged-out-home">
     <section class="landing-hero">
@@ -74,4 +75,3 @@ export default {
 <style>
 @import '@/assets/css/landing.css';
 </style>
-
