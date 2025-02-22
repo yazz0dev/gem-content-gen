@@ -12,11 +12,13 @@
     "lint": "run-s lint:*"
   },
   "dependencies": {
+    "@dqbd/tiktoken": "^1.0.20",
     "@google/generative-ai": "^0.21.0",
     "bootstrap": "^5.3.3",
     "bootstrap-icons": "^1.11.3",
     "dompurify": "^3.2.4",
     "firebase": "^11.3.1",
+    "firebase-admin": "^13.1.0",
     "html2pdf.js": "^0.10.2",
     "pinia": "^3.0.1",
     "vee-validate": "^4.15.0",

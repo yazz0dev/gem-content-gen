@@ -16,13 +16,6 @@
   margin: 1rem;
 }
 
-.model-grid,
-.content-type-grid,
-.template-grid {
-  grid-template-columns: 1fr;
-  gap: 1rem;
-}
-
 .step-label {
   font-size: 0.8rem;
 }
@@ -36,13 +29,6 @@
   .content-generation-section {
     padding: var(--tablet-padding);
     margin: 1.5rem;
-  }
-
-  .model-grid,
-  .content-type-grid,
-  .template-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1.5rem;
   }
 
   .step-label {
@@ -62,17 +48,7 @@
     margin: 2rem auto;
     max-width: 1200px;
   }
-
-  .model-grid,
-  .content-type-grid {
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 2rem;
-  }
-
-  .template-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-
+  
   .step-label {
     font-size: 1rem;
   }

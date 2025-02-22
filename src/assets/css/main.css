@@ -27,6 +27,11 @@
   --spacing-md: 1.5rem;
   --spacing-lg: 2rem;
   --spacing-xl: 3rem;
+
+    /* Responsive Padding (Mobile-First) */
+    --mobile-padding: 1rem;
+    --tablet-padding: 1.5rem;
+    --desktop-padding: 2rem;
 }
 
 /* General Styles */
@@ -39,7 +44,9 @@ body {
 
 .container {
   max-width: 1200px;
-  padding: 2rem 1rem;
+  padding: var(--mobile-padding); /* Start with mobile padding */
+  margin-left: auto; /* Center the container */
+  margin-right: auto; /* Center the container */
 }
 
 /* Main Container */
@@ -50,8 +57,6 @@ body {
 }
 
 /* Subtle Animations (Keep these) */
-/* Removed Redundant */
-
 .hover-highlight:hover {
   background-color: #e9ecef;
   transition: background-color 0.2s ease;
@@ -63,10 +68,10 @@ body {
   margin: auto;
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-md);
-  padding: 1.5rem;
+  padding: var(--spacing-md); /* Use consistent spacing variable */
   background-color: var(--surface-color);
   border: none;
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--spacing-md);
 }
 
 /* Template Selector */
@@ -75,7 +80,7 @@ body {
   cursor: pointer;
   border: 2px solid transparent;
   border-radius: var(--border-radius-lg);
-  padding: 0.5rem;
+  padding: var(--spacing-sm);
   overflow: hidden; /* For rounded corners on images */
 }
 
@@ -92,20 +97,21 @@ body {
 /* Model Selector (Keep and adjust as needed) */
 .model-selector {
   display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin-bottom: 1rem;
+  flex-wrap: wrap; /* Allow wrapping on smaller screens */
+  gap: var(--spacing-sm); /* Use consistent spacing variable */
+  margin-bottom: var(--spacing-sm);
 }
 
 .model-option {
   border-radius: var(--border-radius-lg);
-  padding: 0.5rem;
+  padding: var(--spacing-sm);
   cursor: pointer;
   background-color: var(--surface-color);
   transition: all 0.2s ease;
   text-align: center;
-  width: 150px; /* Or use a percentage for responsiveness */
+  width: 100%; /* Full width on smallest screens */
   border: 2px solid transparent;
+  box-sizing: border-box; /* Include padding and border in the element's total width */
 }
 
 .model-option:hover {
@@ -121,9 +127,9 @@ body {
 /* Content Preview */
 .content-preview-container {
     border-radius: var(--border-radius-lg);
-    padding: 1.5rem;
+    padding: var(--spacing-md);
     background-color: var(--surface-color);
-    margin-bottom: 1.5rem;
+    margin-bottom: var(--spacing-md);
     box-shadow: var(--shadow-md);
     border: none;
 }
@@ -133,22 +139,30 @@ h1, h2, h3 {
   font-weight: 700; /* Bolder headings */
 }
 
+/* Enhanced Buttons - Using Bootstrap classes, but with custom variables */
 .btn-primary {
-  background: var(--primary-color);
-  border: none;
-  box-shadow: var(--shadow-md);
+    background: var(--primary-color);
+    border: none;
+    box-shadow: var(--shadow-md);
+    color: white; /* Ensure text is white */
+    padding: var(--spacing-sm) var(--spacing-lg); /* Consistent padding */
+    border-radius: var(--border-radius-md); /* Consistent radius */
+    transition: all 0.2s ease; /* Smooth transitions */
+}
+.btn-primary:hover:not(:disabled) { /* Add :not(:disabled) */
+    background: var(--primary-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
 }
 
-.btn-primary:hover {
-  background: var(--primary-hover);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
 
 .btn-secondary {
   background: var(--secondary-color);
   border: none;
   color: white;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border-radius: var(--border-radius-md);
+  transition: all 0.2s ease;
 }
 
 .btn-secondary:hover {
@@ -160,13 +174,9 @@ h1, h2, h3 {
   border: none;
 }
 
-.model-option.selected {
-  border-color: var(--primary-color); /* Bootstrap primary color on hover/select */
-}
-
 /* Modern UI Additions */
 .btn {
-  padding: 0.75rem 1.5rem;
+  padding: var(--spacing-sm) var(--spacing-md); /*Use Variables */
   border-radius: var(--border-radius-md);
   transition: all 0.2s ease;
   font-weight: 500;
@@ -177,8 +187,8 @@ h1, h2, h3 {
   border-radius: var(--border-radius-lg);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   box-shadow: var(--shadow-md);
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
 }
 
 .card:hover {
@@ -189,8 +199,10 @@ h1, h2, h3 {
 .form-control {
   border-radius: var(--border-radius-md);
   border: 2px solid #e2e8f0;
-  padding: 0.75rem 1rem;
+  padding: var(--spacing-sm) var(--spacing-md); /* Use variables */
   transition: all 0.2s ease;
+  box-sizing: border-box; /* Include padding in width */
+  width: 100%; /* Full width by default */
 }
 
 .form-control:focus {
@@ -202,96 +214,14 @@ h1, h2, h3 {
   border-radius: var(--border-radius-md);
   border: none;
   box-shadow: var(--shadow-md);
-  padding: 1rem 1.5rem;
-}
-
-/* Enhanced Template Selector */
-.template-option {
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow-md);
-  overflow: hidden;
-}
-
-.template-option.selected {
-  border-color: var(--primary-color);
-  transform: scale(1.05);
-}
-
-/* Enhanced Model Selector */
-.model-option {
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow-md);
-  transition: all 0.2s ease;
-}
-
-.model-option:hover {
-  transform: translateY(-5px);
-}
-
-.model-option.selected {
-  border-color: var(--primary-color);
-  background: linear-gradient(135deg, #4158D0 0%, #C850C0 100%);
-  color: white;
-}
-
-
-
-.btn-primary {
-  background: var(--primary-color);
-  border: none;
-  box-shadow: var(--shadow-md);
-}
-
-.btn-primary:hover {
-  background: var(--primary-hover);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-.btn-secondary {
-  background: var(--secondary-color);
-  border: none;
-  color: white;
-}
-
-.btn-secondary:hover {
-  background: #2980b9;
-}
-
-.card {
-  border: none;
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow-md);
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.form-control:focus {
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-}
-
-/* Enhanced Template and Model Selectors */
-.template-option {
-  border-radius: var(--border-radius-lg);
-  transition: all 0.3s ease;
-}
-
-.template-option.selected {
-  border-color: var(--primary-color);
-  box-shadow: 0 8px 15px rgba(52, 152, 219, 0.2);
-}
-
-.model-option.selected {
-  background: var(--primary-color);
-  color: white;
+  padding: var(--spacing-sm) var(--spacing-md); /* Consistent padding */
 }
 
 /* Additional Modern Touches */
 .section-title {
   color: var(--text-primary);
   font-weight: 700;
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--spacing-md); /* Use variable */
 }
 
 .text-muted {
@@ -301,9 +231,9 @@ h1, h2, h3 {
 /* Hero Section Specific */
 .hero-section {
   background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
-  border-radius: 16px;
-  padding: 2rem;  /* Reduced padding */
-  margin-bottom: 2rem;
+  border-radius: var(--border-radius-lg); /* Use variable */
+  padding: var(--spacing-lg);  /* Reduced padding - use variable */
+  margin-bottom: var(--spacing-lg);
   position: relative;
   overflow: hidden;
 }
@@ -311,7 +241,7 @@ h1, h2, h3 {
 .hero-title {
   font-size: 2.5rem; /* Reduced font size */
   font-weight: 800;
-  margin-bottom: 1rem;
+  margin-bottom: var(--spacing-sm); /* Use variable */
   color: white;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
@@ -319,7 +249,7 @@ h1, h2, h3 {
 .hero-description {
   font-size: 1.125rem; /* Reduced font size */
   max-width: 600px;
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--spacing-md); /* Use variable */
   line-height: 1.5;
   color: rgba(255, 255, 255, 0.9);
 }
@@ -327,15 +257,15 @@ h1, h2, h3 {
 /* Feature Items in Hero */
 .features-grid {
   background: rgba(255, 255, 255, 0.1);
-  border-radius: var(--border-radius-lg);
-  padding: 1.5rem;
+  border-radius: var(--border-radius-lg); /* Use variable */
+  padding: var(--spacing-md); /* Use variable */
   backdrop-filter: blur(8px);
 }
 
 .feature-item {
   color: white;
-  padding: 0.5rem 1rem;
-  border-radius: var(--border-radius-md);
+  padding: var(--spacing-sm) var(--spacing-md); /* Use variables */
+  border-radius: var(--border-radius-md); /* Use variable */
   background: rgba(255, 255, 255, 0.1);
 }
 
@@ -343,16 +273,16 @@ h1, h2, h3 {
 .feature-cards {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 1.5rem;
-  margin: 2rem auto;
+  gap: var(--spacing-md); /* Use variable */
+  margin: var(--spacing-lg) auto; /* Use variable */
   max-width: 1000px;
 }
 
 .feature-card {
   background: rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(10px);
-  border-radius: 12px;
-  padding: 1.5rem;
+  border-radius: var(--border-radius-md); /* Use variable */
+  padding: var(--spacing-md); /* Use variable */
   text-align: center;
   transition: transform 0.3s ease;
 }
@@ -366,7 +296,7 @@ h1, h2, h3 {
   font-size: 1.25rem;
   font-weight: 600;
   color: white;
-  margin: 0.75rem 0;
+  margin: var(--spacing-sm) 0; /* Use variable */
 }
 
 .feature-description {
@@ -378,7 +308,7 @@ h1, h2, h3 {
 /* Auth Section */
 .auth-section {
   background: white;
-  border-radius: 24px;
+  border-radius: var(--border-radius-lg); /* Use variable */
   padding: var(--spacing-xl);
   text-align: center;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
@@ -389,8 +319,8 @@ h1, h2, h3 {
   background: var(--primary-color);
   color: white;
   border: none;
-  padding: 1rem 2rem;
-  border-radius: 12px;
+  padding: var(--spacing-sm) var(--spacing-lg); /* Use variables */
+  border-radius: var(--border-radius-md); /* Use variable */
   font-size: 1.1rem;
   font-weight: 600;
   transition: all 0.3s ease;
@@ -416,8 +346,8 @@ h1, h2, h3 {
 /* Template Section */
 .template-section {
   background: white;
-  border-radius: 24px;
-  padding: var(--spacing-lg);
+  border-radius: var(--border-radius-lg);  /* Use variable */
+  padding: var(--spacing-lg); /* Use variable */
   margin-bottom: var(--spacing-xl);
 }
 
@@ -440,51 +370,16 @@ h1, h2, h3 {
 /* Preview Section */
 .preview-section {
   background: white;
-  border-radius: 24px;
+  border-radius: var(--border-radius-lg); /* Use variable */
   padding: var(--spacing-lg);
   /* opacity: 0;
   transform: translateY(20px); */
   transition: all 0.5s ease;
 }
 
-/* .preview-section.active {
-  opacity: 1;
-  transform: translateY(0);
-} */
-
-/* Model Selector Container */
-.model-selector-container {
-  max-width: 1000px;
-  margin: 2rem auto;
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 12px;
-  padding: 1.5rem;
-  backdrop-filter: blur(8px);
-}
-
-.model-option {
-  background: rgba(255, 255, 255, 0.9);
-  color: var(--text-primary);
-  border-radius: 8px;
-  padding: 0.75rem;
-  margin: 0.5rem;
-  transition: all 0.2s ease;
-}
-
-.model-option.selected {
-  background: var(--primary-color);
-  color: white;
-  transform: translateY(-2px);
-}
-
-.model-option:hover {
-  transform: translateY(-2px);
-  background: white;
-}
-
 /* Navigation Bar Fix */
 .navbar {
-  padding: 0.5rem 0;
+  padding: var(--spacing-sm) 0; /* Use variable */
   height: auto;
   min-height: 60px;
 }
@@ -502,12 +397,18 @@ h1, h2, h3 {
   }
 
   .container {
-    padding: 1rem;
+    padding: var(--mobile-padding); /* Use mobile padding */
   }
 
   .hero-section {
-    padding: 2rem 1rem;
+    padding: var(--spacing-md) var(--mobile-padding); /* Use variables */
   }
+  /* Adjust Model Selector for smaller screens */
+    .model-option {
+        flex: 0 0 calc(50% - 1rem); /* Two columns on smaller screens */
+        min-width: 150px; /* Ensure reasonable size */
+    }
+
 }
 
 /* Responsive Design */
@@ -525,8 +426,19 @@ h1, h2, h3 {
   }
 
   .main-container {
-    padding: var(--spacing-md);
+    padding: var(--spacing-md); /* Use variable */
   }
+
+    /* Adjust Content Type cards */
+    .content-type-card {
+        flex: 1 0 auto;  /* Allow cards to grow and shrink */
+        min-width: 200px; /* Minimum width */
+    }
+
+    /* Adjust form and preview sections */
+    .input-section, .preview-section {
+        padding: var(--spacing-sm); /* Consistent padding */
+    }
 }
 /* Fade-in animation */
 .fade-enter-active, .fade-leave-active {
@@ -602,11 +514,7 @@ h1, h2, h3 {
   .step-connector {
     width: 2px;
     height: 20px;
-    margin: 0.5rem 0 0.5rem 19px;
-  }
-
-  .model-grid {
-    grid-template-columns: 1fr;
+    margin: var(--spacing-sm) 0 var(--spacing-sm) 19px; /* Use variable */
   }
 
   .generation-container .row {
@@ -617,4 +525,7 @@ h1, h2, h3 {
   .preview-section {
     margin-bottom: var(--spacing-md);
   }
+}
+.model-selector-container {
+    margin-bottom: 20px;
 }

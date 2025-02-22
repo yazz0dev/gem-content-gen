@@ -53,11 +53,13 @@ export default {
       let html = props.contentHtml;
 
       if (props.contentType === 'resume') {
-        html = html.replace(/\[NAME_PLACEHOLDER\]/g, props.contentData.fullName || '');
-        html = html.replace(/\[EMAIL_PLACEHOLDER\]/g, props.contentData.email || '');
-        html = html.replace(/\[PHONE_PLACEHOLDER\]/g, props.contentData.phone || '');
-        html = html.replace(/\[LINKEDIN_PLACEHOLDER\]/g, props.contentData.linkedin || '');
-        html = html.replace(/\[GITHUB_PLACEHOLDER\]/g, props.contentData.github || '');
+        // Handle null or undefined values for contentData
+        const data = props.contentData || {};
+        html = html.replace(/\[NAME_PLACEHOLDER\]/g, data.fullName || '');
+        html = html.replace(/\[EMAIL_PLACEHOLDER\]/g, data.email || '');
+        html = html.replace(/\[PHONE_PLACEHOLDER\]/g, data.phone || '');
+        html = html.replace(/\[LINKEDIN_PLACEHOLDER\]/g, data.linkedin || '');
+        html = html.replace(/\[GITHUB_PLACEHOLDER\]/g, data.github || '');
 
       }
       // Add placeholder replacement for other content types as needed

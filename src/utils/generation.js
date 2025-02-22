@@ -1,18 +1,22 @@
 // src/utils/generation.js
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { updateModelUsage } from "./firebaseUtils"; // Import updateModelUsage
+
 
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
 
 async function generateContent(formData, selectedTemplate, selectedModel, contentType) {
     const prompt = generatePrompt(formData, selectedTemplate, contentType);
-    //console.log("Generated Prompt:", prompt); // Debugging line
     const model = genAI.getGenerativeModel({ model: selectedModel });
 
     try {
         const result = await model.generateContent(prompt);
         const response = await result.response;
         const generatedHtml = extractHtmlFromResponse(response.text());
+
+        // Count tokens and update usage *after* successful generation
         return { html: generatedHtml };
+
     } catch (error) {
         console.error("Error generating content:", error);
         // Provide more specific error messages based on the error type
@@ -70,35 +74,7 @@ ${formData.keyPoints ? `**Key Points:**\n${formData.keyPoints}\n` : ''}
 ${formData.callToAction ? `**Call to Action:** ${formData.callToAction}\n` : ''}
 `;
 
-    } else if (contentType === 'cover-letter') {
-        prompt += `
-**Cover Letter Information:**
-${formData.companyName ? `**Company Name:** ${formData.companyName}\n` : ''}
-${formData.jobTitle ? `**Job Title:** ${formData.jobTitle}\n` : ''}
-${formData.hiringManager ? `**Hiring Manager Name:** ${formData.hiringManager}\n` : ''}
-${formData.introduction ? `**Introduction Paragraph:**\n${formData.introduction}\n` : ''}
-${formData.body ? `**Body Paragraphs:**\n${formData.body}\n` : ''}
-${formData.conclusion ? `**Conclusion Paragraph:**\n${formData.conclusion}\n` : ''}
-`;
-    }
-    else if (contentType === 'linkedin-about') {
-          prompt += `
-**LinkedIn About Me Information:**
-${formData.headline ? `**Headline:** ${formData.headline}\n` : ''}
-${formData.summary ? `**Summary:** ${formData.summary}\n` : ''}
-${formData.keywords ? `**Keywords:** ${formData.keywords}\n` : ''}
-${formData.experienceHighlights ? `**Experience Highlights:** ${formData.experienceHighlights}\n` : ''}
-`;
-      } else if (contentType === 'blog-ideas') {
-            prompt += `
-**Blog Post Ideas Information:**
-${formData.topic ? `**Topic:** ${formData.topic}\n` : ''}
-${formData.keywords ? `**Keywords:** ${formData.keywords}\n` : ''}
-${formData.targetAudience ? `**Target Audience:** ${formData.targetAudience}\n` : ''}
-${formData.angle ? `**Angle/Perspective:** ${formData.angle}\n` : ''}
-`;
-        }
-       else if (contentType === 'social-ad-copy') {
+    } else if (contentType === 'social-ad-copy') {
           prompt += `
 **Social Media Ad Copy Information:**
 ${formData.platform ? `**Platform:** ${formData.platform}\n` : ''}
@@ -116,15 +92,7 @@ ${formData.preheader ? `**Preheader Text:** ${formData.preheader}\n` : ''}
 ${formData.body ? `**Body Content:** ${formData.body}\n` : ''}
 ${formData.callToAction ? `**Call to Action:** ${formData.callToAction}\n` : ''}
        `;
-      } else if (contentType === 'website-headlines') {
-        prompt += `
-**Website Headlines Information:**
-${formData.pageType ? `**Page Type:** ${formData.pageType}\n` : ''}
-${formData.productOrService ? `**Product/Service:** ${formData.productOrService}\n` : ''}
-${formData.targetAudience ? `**Target Audience:** ${formData.targetAudience}\n` : ''}
-${formData.keyBenefit ? `**Key Benefit/Value Proposition:** ${formData.keyBenefit}\n` : ''}
-`;
-      } else if(contentType === 'product-descriptions'){
+      }  else if(contentType === 'product-descriptions'){
         prompt += `
 **Product Descriptions Information:**
 ${formData.productName ? `**Product Name:** ${formData.productName}\n` : ''}
@@ -133,16 +101,39 @@ ${formData.benefits ? `**Benefits:** ${formData.benefits}\n` : ''}
 ${formData.targetAudience ? `**Target Audience:** ${formData.targetAudience}\n` : ''}
         `;
 
-      } else if (contentType === 'youtube-content') {
-        prompt += `
-**YouTube Titles/Descriptions Information:**
-${formData.videoTopic ? `**Video Topic:** ${formData.videoTopic}\n` : ''}
-${formData.keywords ? `**Keywords:** ${formData.keywords}\n` : ''}
-${formData.targetAudience ? `**Target Audience:** ${formData.targetAudience}\n` : ''}
-${formData.keyPoints ? `**Key Points (for Description):** ${formData.keyPoints}\n` : ''}
-`;
-      }
-
+      } else if (contentType === 'business-proposals') {
+            prompt += `
+    **Business Proposal Information:**
+    ${formData.clientName ? `**Client Name:** ${formData.clientName}\n` : ''}
+    ${formData.projectName ? `**Project Name:** ${formData.projectName}\n` : ''}
+    ${formData.projectOverview ? `**Project Overview:**\n${formData.projectOverview}\n` : ''}
+    ${formData.objectives ? `**Objectives:**\n${formData.objectives.map(obj => `- ${obj}`).join('\n')}\n` : ''}
+    ${formData.scopeOfWork ? `**Scope of Work:**\n${formData.scopeOfWork}\n` : ''}
+    ${formData.timeline ? `**Project Timeline:** ${formData.timeline}\n` : ''}
+    ${formData.budget ? `**Budget:** ${formData.budget}\n` : ''}
+    `;
+        } else if (contentType === 'website-copy') {
+            prompt += `
+    **Website Copy Information:**
+    ${formData.pageType ? `**Page Type:** ${formData.pageType}\n` : ''}
+    ${formData.targetAudience ? `**Target Audience:** ${formData.targetAudience}\n` : ''}
+    ${formData.keyMessage ? `**Key Message:**\n${formData.keyMessage}\n` : ''}
+    ${formData.callToAction ? `**Call to Action:** ${formData.callToAction}\n` : ''}
+    `;
+        } else if (contentType === 'press-releases') {
+            prompt += `
+    **Press Release Information:**
+    ${formData.headline ? `**Headline:** ${formData.headline}\n` : ''}
+    ${formData.companyName ? `**Company Name:** ${formData.companyName}\n` : ''}
+    ${formData.city ? `**City:** ${formData.city}\n` : ''}
+    ${formData.state ? `**State:** ${formData.state}\n` : ''}
+    ${formData.releaseDate ? `**Release Date:** ${formData.releaseDate}\n` : ''}
+    ${formData.body ? `**Body Text:**\n${formData.body}\n` : ''}
+    ${formData.contactName ? `**Contact Name:** ${formData.contactName}\n` : ''}
+    ${formData.contactEmail ? `**Contact Email:** ${formData.contactEmail}\n` : ''}
+    ${formData.contactPhone ? `**Contact Phone:** ${formData.contactPhone}\n` : ''}
+    `;
+        }
 
     // Add user-provided instructions (if any) - keep at the end, after specific content
     if (formData.instructions) {

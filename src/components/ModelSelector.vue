@@ -16,6 +16,10 @@
             <span class="model-speed">{{ model.speed }}</span>
             <span class="model-quality">{{ model.quality }}</span>
           </div>
+           <!-- Selected Indicator -->
+          <div v-if="modelValue === model.id" class="selected-indicator">
+            <i class="bi bi-check-circle-fill"></i>
+          </div>
         </div>
       </div>
     </div>
@@ -24,7 +28,8 @@
 
 <script>
 import { ref, watchEffect } from 'vue';
-import { checkModelRateLimit } from '@/utils/firebaseUtils';
+// Removed: import { checkModelRateLimit } from '@/utils/firebaseUtils'; // No longer needed here
+import { checkModelRateLimit } from '@/utils/firebaseUtils'; // Import updated checkModelRateLimit
 
 export default {
   name: 'ModelSelector',
@@ -48,11 +53,12 @@ export default {
       try {
         for (const model of props.models) {
           const isLimited = await checkModelRateLimit(model.name);
-          modelStatus.value.set(model.name, isLimited);
+          modelStatus.value.set(model.name, isLimited); // Directly use the result
         }
       } catch (error) {
         console.error('Error checking rate limits:', error);
         rateLimitError.value = 'Error checking model availability. Please try again later.';
+        //  Assume models are NOT rate-limited on error.  You might choose to handle this differently.
         props.models.forEach(model => {
           modelStatus.value.set(model.name, false);
         });
@@ -100,6 +106,7 @@ export default {
 }
 
 .model-option {
+  position: relative; /* For the selected indicator */
   flex: 0 0 250px;
   background: white;
   border-radius: var(--border-radius-lg);
@@ -107,16 +114,20 @@ export default {
   cursor: pointer;
   transition: all 0.3s ease;
   border: 2px solid transparent;
+  box-shadow: var(--shadow-sm); /* Add a subtle shadow by default */
 }
 
-.model-option:hover {
+/* Hover effect: only if NOT rate-limited */
+.model-option:not(.rate-limited):hover {
   transform: translateY(-4px);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-md); /* More pronounced shadow on hover */
 }
 
+/* Selected state */
 .model-option.selected {
   border-color: var(--primary-color);
   background: linear-gradient(to bottom right, rgba(37, 99, 235, 0.1), rgba(37, 99, 235, 0.05));
+  box-shadow: 0 4px 8px rgba(37, 99, 235, 0.2); /* Selected shadow */
 }
 
 .model-icon {
@@ -160,5 +171,14 @@ export default {
   opacity: 0.5;
   pointer-events: none;
   cursor: not-allowed;
+}
+
+/* Selected Indicator Styles */
+.selected-indicator {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  color: var(--success-color);
+  font-size: 1.2rem;
 }
 </style>

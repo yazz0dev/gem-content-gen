@@ -1,5 +1,6 @@
 import { db } from '@/firebase';
 import { doc, getDoc, setDoc, updateDoc, collection, getDocs, increment, runTransaction, serverTimestamp  } from 'firebase/firestore';
+import { MODEL_LIMITS } from './constants'; // Import the limits
 
 async function isAdmin(userId) {
     try {
@@ -8,7 +9,6 @@ async function isAdmin(userId) {
         return adminDocSnap.exists();
     } catch (error) {
         console.error("Error checking admin status:", error);
-        //  Treat errors as non-admin for security.
         return false;
     }
 }
@@ -17,20 +17,24 @@ export async function canGenerateResume(userId) {
   try {
     const userRef = doc(db, 'users', userId);
     const userDoc = await getDoc(userRef);
-    
+
     if (!userDoc.exists()) {
       return true; // First time user
     }
 
-    const lastGeneration = userDoc.data().lastGenerationDate?.toDate();
-    if (!lastGeneration) {
-      return true;
+    const userData = userDoc.data();
+    const lastGeneration = userData.lastGenerationDate;
+
+    // Check if lastGenerationDate exists and is a Timestamp object
+    if (!lastGeneration || typeof lastGeneration.toDate !== 'function') {
+        return true; // Treat as if the user can generate
     }
 
+    const lastGenerationDate = lastGeneration.toDate();
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const lastDate = new Date(lastGeneration.getFullYear(), lastGeneration.getMonth(), lastGeneration.getDate());
-    
+    const lastDate = new Date(lastGenerationDate.getFullYear(), lastGenerationDate.getMonth(), lastGenerationDate.getDate());
+
     return lastDate < today;
   } catch (error) {
     console.error('Error checking generation limit:', error);
@@ -51,73 +55,57 @@ export async function updateLastGenerationDate(userId) {
   }
 }
 
-async function submitModelRating(modelName, ratings)
-{
-    try {
-        const modelRef = doc(db, 'modelRatings', modelName);
-        const modelDoc = await getDoc(modelRef);
+// Updated submitModelRating to use modelRateLimits
+async function submitModelRating(modelName, ratings) {
+  try {
+    const modelRef = doc(db, 'modelRateLimits', modelName); 
 
-        if (modelDoc.exists()) {
-            await updateDoc(modelRef, {
-                contentAccuracy: increment(ratings.contentAccuracy),
-                formatting: increment(ratings.formatting),
-                relevance: increment(ratings.relevance),
-                overallQuality: increment(ratings.overallQuality),
-                count: increment(1),
-            });
-        } else {
-            await setDoc(modelRef, {
-                contentAccuracy: ratings.contentAccuracy,
-                formatting: ratings.formatting,
-                relevance: ratings.relevance,
-                overallQuality: ratings.overallQuality,
-                count: 1,
-            });
-        }
-    } catch (error) {
-        console.error("Error submitting rating:", error);
-        throw new Error('Failed to submit rating. Please try again.'); // Consistent error handling
-    }
+    await updateDoc(modelRef, {
+      contentAccuracy: increment(ratings.contentAccuracy),
+      formatting: increment(ratings.formatting),
+      overallQuality: increment(ratings.overallQuality),
+      count: increment(1),
+    });
+
+  } catch (error) {
+    console.error("Error submitting rating:", error);
+    throw new Error('Failed to submit rating. Please try again.');
+  }
 }
 
-
-
+// Updated fetchLeaderboardData to get everything from modelRateLimits
 async function fetchLeaderboardData() {
   try {
     const leaderboardData = [];
-    const querySnapshot = await getDocs(collection(db, 'modelRatings'));
+    const querySnapshot = await getDocs(collection(db, 'modelRateLimits'));
 
     for (const docSnapshot of querySnapshot.docs) {
       const modelId = docSnapshot.id;
-      // Only include specific models
+
+       //Only include specific models in the leaderboard
       if (['gemini-2.0-pro-exp-02-05', 'gemini-2.0-flash-thinking-exp-01-21', 'gemini-2.0-flash', 'gemini-2.0-flash-lite-preview-02-05'].includes(modelId)) {
         const data = docSnapshot.data();
-        const totalScore = data.contentAccuracy + data.formatting + data.relevance + data.overallQuality;
-        const averageRating = data.count > 0 ? totalScore / (data.count * 4) * 5 : 0;
+        const {
+          isAvailable = false,
+          contentAccuracy = 0,
+          formatting = 0,
+          overallQuality = 0,
+          count = 0
+        } = data; // Destructure *all* fields, with defaults
 
-        // Fetch additional data (RPM, TPM, isAvailable) - Assuming they are in modelRateLimits
-        const rateLimitRef = doc(db, 'modelRateLimits', modelId);
-        const rateLimitDoc = await getDoc(rateLimitRef);
-        let rpm = 0;
-        let tpm = 0;
-        let isAvailable = false;
+        const totalScore = contentAccuracy + formatting + overallQuality;
+        const averageRating = count > 0 ? (totalScore / (count * 3)) * 5 : 0; // Now dividing by (count * 3)
 
-        if (rateLimitDoc.exists()) {
-          const rateLimitData = rateLimitDoc.data();
-          rpm = rateLimitData.rpm || 0; // Provide default values
-          tpm = rateLimitData.tpm || 0;
-          isAvailable = rateLimitData.isAvailable !== undefined ? rateLimitData.isAvailable : false; //default
-
-        }
-
+        // Get current usage from localStorage
+        const { currentRPM, currentTPM } = getModelUsage(modelId);
 
         leaderboardData.push({
           id: modelId,
           averageRating,
-          count: data.count,
-          rpm,  // Add RPM
-          tpm,  // Add TPM
-          isAvailable //Add available
+          count,
+          rpm: currentRPM,  // Current usage
+          tpm: currentTPM,  // Current usage
+          isAvailable,
         });
       }
     }
@@ -129,61 +117,60 @@ async function fetchLeaderboardData() {
     throw new Error("Failed to load leaderboard data.");
   }
 }
-async function fetchModelRateLimits() {
-  try {
-      const rateLimits = {};
-      const querySnapshot = await getDocs(collection(db, 'modelRateLimits'));
-      querySnapshot.forEach((doc) => {
-          rateLimits[doc.id] = doc.data();
-      });
-      return rateLimits;
-  } catch (error) {
-      console.error("Error fetching model rate limits:", error);
-      throw new Error("Failed to load model rate limits."); // Consistent error handling
-  }
+
+
+// --- Client-Side Rate Limiting ---
+
+function getModelUsage(modelName) {
+    const usageKey = `modelUsage_${modelName}`;
+    let usage = JSON.parse(localStorage.getItem(usageKey) || '{}');
+
+    const now = Date.now();
+    const oneMinute = 60 * 1000;
+    const oneDay = 24 * 60 * oneMinute;
+
+    // Reset RPM and TPM if a minute has passed
+    if (!usage.lastRPMReset || (now - usage.lastRPMReset) > oneMinute) {
+        usage.currentRPM = 0;
+        usage.lastRPMReset = now;
+    }
+    if (!usage.lastTPMReset || (now - usage.lastTPMReset) > oneMinute) {
+        usage.currentTPM = 0;
+        usage.lastTPMReset = now;
+    }
+
+    // Reset RPD if a day has passed
+    if (!usage.lastRPDReset || (now - usage.lastRPDReset) > oneDay) {
+        usage.currentRPD = 0;
+        usage.lastRPDReset = now;
+    }
+    localStorage.setItem(usageKey, JSON.stringify(usage));
+    return usage;
 }
 
+function updateModelUsage(modelName, tokensUsed) {
+    const usage = getModelUsage(modelName);
+    usage.currentRPM += 1;
+    usage.currentTPM += tokensUsed;
+    usage.currentRPD +=1;
+    localStorage.setItem(`modelUsage_${modelName}`, JSON.stringify(usage));
+}
 
-// Use Transaction
+// Updated checkModelRateLimit to use client-side logic
 export const checkModelRateLimit = async (modelName) => {
-  const rateLimitRef = doc(db, 'modelRateLimits', modelName);
+    const modelLimits = MODEL_LIMITS[modelName];
+    if (!modelLimits) {
+      return false; // Model not found, not rate limited
+    }
 
-  try {
-    return await runTransaction(db, async (transaction) => {
-      const rateLimitDoc = await transaction.get(rateLimitRef);
-
-      if (!rateLimitDoc.exists()) {
-        return false; // Not rate limited if no doc
-      }
-
-      const { lastReset, requestCount, maxRequests } = rateLimitDoc.data();
-      const now = new Date().getTime();
-      const resetWindow = 1000 * 60 * 60; // 1 hour
-
-      if (now - lastReset > resetWindow) {
-        // Reset
-        transaction.update(rateLimitRef, {
-          requestCount: 0,
-          lastReset: now,
-        });
-        return false; // Not rate limited
-      }
-
-      if (requestCount >= maxRequests) {
+    const { rpm, tpm, rpd } = modelLimits;
+    const { currentRPM, currentTPM, currentRPD } = getModelUsage(modelName);
+    // console.log(currentRPM, currentTPM, currentRPD); //for debug
+    if (currentRPM >= rpm || currentTPM >= tpm || currentRPD >= rpd) {
         return true; // Rate limited
-      }
+    }
 
-      // Increment request count within the transaction
-      transaction.update(rateLimitRef, {
-        requestCount: increment(1),
-      });
-
-      return false; // Not rate limited (yet)
-    });
-  } catch (error) {
-    console.error('Error checking model rate limit:', error);
-    return false; // Default to not rate limited on error
-  }
+    return false; // Not rate limited
 };
 
-export { isAdmin, submitModelRating, fetchLeaderboardData, fetchModelRateLimits };
+export { isAdmin, submitModelRating, fetchLeaderboardData, updateModelUsage };

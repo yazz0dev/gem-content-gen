@@ -1,5 +1,5 @@
 <template>
-  <div id="app" class="bg-light min-vh-100">
+  <div id="app" class="bg-light min-vh-100 d-flex flex-column">
     <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
       <div class="container py-2">
         <RouterLink to="/" class="navbar-brand">Content Builder</RouterLink>
@@ -9,8 +9,11 @@
         </div>
       </div>
     </nav>
-    <RouterView />
-     <!-- Global Error Display (Optional) -->
+    <div class="flex-grow-1">
+        <RouterView />
+    </div>
+
+     <!-- Global Error Display  -->
     <div v-if="globalError" class="alert alert-danger global-error">
       {{ globalError }}
     </div>

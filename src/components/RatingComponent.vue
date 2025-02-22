@@ -29,19 +29,6 @@
       <p v-if="errors.formatting" class="text-danger small mt-1">{{ errors.formatting }}</p>
     </div>
 
-    <!-- Relevance -->
-    <div class="mb-4">
-      <label class="form-label">Relevance to Template:</label>
-      <div class="d-flex">
-        <button @click="setRating('relevance', rating - 1)" v-for="rating in 5" :key="`relevance-${rating}`"
-                :class="getStarClass('relevance', rating)"
-                class="btn btn-link p-0 me-1 fs-4">
-          ★
-        </button>
-      </div>
-      <p v-if="errors.relevance" class="text-danger small mt-1">{{ errors.relevance }}</p>
-    </div>
-
     <!-- Overall Quality -->
     <div class="mb-4">
       <label class="form-label">Overall Quality:</label>
@@ -83,7 +70,7 @@ export default {
     const ratings = reactive({
       contentAccuracy: 0,
       formatting: 0,
-      relevance: 0,
+      //relevance: 0, // Removed relevance
       overallQuality: 0,
     });
     const showRating = ref(true);
@@ -114,10 +101,7 @@ export default {
         errors.formatting = 'Please rate formatting.';
         isValid = false;
       }
-      if (ratings.relevance === 0) {
-        errors.relevance = 'Please rate relevance.';
-        isValid = false;
-      }
+ 
       if (ratings.overallQuality === 0) {
         errors.overallQuality = 'Please rate Overall Quality.';
         isValid = false;

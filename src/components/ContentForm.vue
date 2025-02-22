@@ -18,6 +18,16 @@
         <Field v-else-if="field.type === 'textarea'" :id="field.key" :name="field.key"
                   :rows="field.rows || 3" class="form-control"  />
 
+        <!-- Select Input -->
+        <div v-else-if="field.type === 'select'" class="form-floating">
+          <Field as="select" :id="field.key" :name="field.key" class="form-select">
+            <option v-for="option in field.options" :key="option" :value="option">
+              {{ option }}
+            </option>
+          </Field>
+          <label :for="field.key">{{ field.label }}</label>
+        </div>
+
         <!-- List Input (like skills) -->
         <div v-else-if="field.type === 'list'" class="input-group">
            <input type="text" v-model="newListValue" @keyup.enter="addListItem(field.key)"
@@ -70,6 +80,7 @@ export default {
       required: true,
     },
   },
+  emits: ['generate-content'],
   setup(props, { emit }) {
     const formData = reactive({}); // Keep formData for list input compatibility
     const newListValue = ref('');
@@ -82,14 +93,17 @@ export default {
         case 'resume': return 'Resume Information';
         case 'poster': return 'Poster Content';
         case 'social-post': return 'Social Media Post Details'; // Corrected hyphen
-        case 'cover-letter': return 'Cover Letter Details';
-        case 'linkedin-about': return 'LinkedIn About Details';
-        case 'blog-ideas': return 'Blog Post Ideas';
+        //case 'cover-letter': return 'Cover Letter Details'; // Removed
+        //case 'linkedin-about': return 'LinkedIn About Details'; // Removed
+        //case 'blog-ideas': return 'Blog Post Ideas'; // Removed
         case 'social-ad-copy': return 'Social Media Ad Copy';
         case 'email-marketing': return 'Email Marketing Details';
-        case 'website-headlines': return 'Website Headline Details';
+        //case 'website-headlines': return 'Website Headline Details'; // Removed
         case 'product-descriptions': return 'Product Description Details';
-        case 'youtube-content': return 'YouTube Content Details';
+        //case 'youtube-content': return 'YouTube Content Details'; // Removed
+        case 'business-proposals': return 'Business Proposal Details'; //Added
+        case 'website-copy': return 'Website Copy Details'; // Added
+        case 'press-releases': return 'Press Release Details';// Added
         default: return 'Content Information';
       }
     });
@@ -98,15 +112,13 @@ export default {
       switch (props.contentType) {
         case 'resume': return 'Fill in the details below to generate your resume.';
         case 'poster': return 'Enter the text and details for your poster.';
-        case 'social-post': return 'Provide the content and any specifics for your social media post.'; // Corrected
-        case 'cover-letter': return 'Enter the details for your cover letter.';
-        case 'linkedin-about': return 'Fill in the details for your LinkedIn About section.';
-        case 'blog-ideas': return 'Provide the topic and details for your blog post ideas.';
+        case 'social-post': return 'Provide the content and any specifics for your social media post.'; 
         case 'social-ad-copy': return 'Provide the details for your social media ad copy.';
         case 'email-marketing': return 'Fill in the details for your email marketing campaign.';
-        case 'website-headlines': return 'Provide the information for your website headlines.';
         case 'product-descriptions': return 'Enter the details for your product descriptions.';
-        case 'youtube-content': return 'Fill in the details for your YouTube content.';
+        case 'business-proposals': return 'Enter the details for your Business Proposal.'; // Added
+        case 'website-copy': return 'Fill in the details for your Website Copy.';// Added
+        case 'press-releases': return 'Fill in the details for your Press Release.'; // Added
 
         default: return 'Provide the necessary information.';
       }
@@ -142,31 +154,7 @@ export default {
             { key: 'hashtags', label: 'Hashtags', type: 'list', placeholder: 'Add a hashtag' },
             { key: 'mentions', label: 'Mentions', type: 'list', placeholder: 'Add a mention' },
           ];
-        case 'cover-letter':
-          return [
-            { key: 'companyName', label: 'Company Name', type: 'text', required: true },
-            { key: 'jobTitle', label: 'Job Title', type: 'text', required: true },
-            { key: 'hiringManager', label: 'Hiring Manager Name (optional)', type: 'text' },
-            { key: 'introduction', label: 'Introduction Paragraph', type: 'textarea', required: true },
-            { key: 'body', label: 'Body Paragraphs', type: 'textarea', required: true },
-            { key: 'conclusion', label: 'Conclusion Paragraph', type: 'textarea', required: true },
-          ];
-        case 'linkedin-about':
-          return [
-            { key: 'headline', label: 'Headline', type: 'text', required: true },
-            { key: 'summary', label: 'Summary', type: 'textarea', required: true },
-            { key: 'keywords', label: 'Keywords (comma-separated)', type: 'text', required: true },
-            { key: 'experienceHighlights', label: 'Experience Highlights', type: 'textarea', required: true },
-
-          ];
-        case  'blog-ideas':
-            return [
-              { key: 'topic', label: 'Topic', type: 'text', required: true },
-              { key: 'keywords', label: 'Keywords (comma-separated)', type: 'text', required: true },
-              { key: 'targetAudience', label: 'Target Audience', type: 'text', required: true },
-              { key: 'angle', label: 'Angle/Perspective', type: 'text', required: true },
-            ];
-
+          
         case  'social-ad-copy':
           return [
             { key: 'platform', label: 'Platform', type: 'select', required: true,
@@ -185,13 +173,7 @@ export default {
               { key: 'body', label: 'Body Content', type: 'textarea', required: true },
               { key: 'callToAction', label: 'Call to Action', type: 'text', required: true },
             ];
-          case 'website-headlines':
-           return [
-              { key: 'pageType', label: 'Page Type', type: 'select', required: true, options: ['Landing Page', 'Product Page', 'Blog Page'] },
-              { key: 'productOrService', label: 'Product/Service', type: 'text', required: true },
-              { key: 'targetAudience', label: 'Target Audience', type: 'text', required: true },
-              { key: 'keyBenefit', label: 'Key Benefit/Value Proposition', type: 'text', required: true },
-          ];
+            
          case 'product-descriptions':
           return [
               { key: 'productName', label: 'Product Name', type: 'text', required: true },
@@ -199,13 +181,36 @@ export default {
               { key: 'benefits', label: 'Benefits', type: 'textarea', required: true },
               { key: 'targetAudience', label: 'Target Audience', type: 'text', required: true },
           ];
-          case 'youtube-content':
-            return [
-              { key: 'videoTopic', label: 'Video Topic', type: 'text', required: true },
-              { key: 'keywords', label: 'Keywords (comma-separated)', type: 'text', required: true },
-              { key: 'targetAudience', label: 'Target Audience', type: 'text', required: true },
-              { key: 'keyPoints', label: 'Key Points (for Description)', type: 'textarea', required: true },
-            ];
+          
+           case 'business-proposals': // Added
+                return [
+                    { key: 'clientName', label: 'Client Name', type: 'text', required: true },
+                    { key: 'projectName', label: 'Project Name', type: 'text', required: true },
+                    { key: 'projectOverview', label: 'Project Overview', type: 'textarea', required: true },
+                    { key: 'objectives', label: 'Objectives', type: 'list', placeholder: 'Add an objective' },
+                    { key: 'scopeOfWork', label: 'Scope of Work', type: 'textarea', required: true },
+                    { key: 'timeline', label: 'Project Timeline', type: 'text' },
+                    { key: 'budget', label: 'Budget', type: 'text' },
+                ];
+            case 'website-copy': // Added
+                return [
+                    { key: 'pageType', label: 'Page Type', type: 'select', required: true, options: ['Homepage', 'About Us', 'Services', 'Contact Us'] },
+                    { key: 'targetAudience', label: 'Target Audience', type: 'text', required: true },
+                    { key: 'keyMessage', label: 'Key Message', type: 'textarea', required: true },
+                    { key: 'callToAction', label: 'Call to Action', type: 'text' },
+                ];
+            case 'press-releases': // Added
+                return [
+                    { key: 'headline', label: 'Headline', type: 'text', required: true },
+                    { key: 'companyName', label: 'Company Name', type: 'text', required: true },
+                    { key: 'city', label: 'City', type: 'text', required: true },
+                    { key: 'state', label: 'State', type: 'text', required: true },
+                    { key: 'releaseDate', label: 'Release Date', type: 'text', inputType: 'date' },
+                    { key: 'body', label: 'Body Text', type: 'textarea', required: true },
+                    { key: 'contactName', label: 'Contact Name', type: 'text' },
+                    { key: 'contactEmail', label: 'Contact Email', type: 'text', inputType: 'email' },
+                    { key: 'contactPhone', label: 'Contact Phone', type: 'text', inputType: 'tel' },
+                ];
 
         default:
           return [];
@@ -239,7 +244,7 @@ export default {
 
       });
       formSchema.value = yup.object().shape(schema);
-      showInstructions.value = ['resume', 'poster', 'social-post', 'cover-letter'].includes(newContentType);
+      showInstructions.value = ['resume', 'poster', 'social-post', 'cover-letter', 'business-proposals', 'press-releases'].includes(newContentType); //added new
 
     }, { immediate: true });
 

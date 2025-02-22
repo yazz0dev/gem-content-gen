@@ -91,12 +91,11 @@
              <div class="row">
                <div class="col-md-6">
                  <div class="input-section">
-                   <div class="d-flex justify-content-between align-items-center mb-3">
-                     <h3 class="section-title mb-0">{{ formattedContentType }} Details</h3>
-                     <button @click="handleBackFromGenerate" class="btn btn-outline-secondary">
-                       <i class="bi bi-arrow-left me-2"></i> Back
-                     </button>
-                   </div>
+                  <div class="d-flex justify-content-between align-items-center mb-3">
+                 <button @click="handleBackFromGenerate" class="btn btn-outline-secondary">
+                   <i class="bi bi-arrow-left me-2"></i> Back
+                 </button>
+               </div>
                      <!-- Display Generation Error Here -->
                      <div v-if="generationError" class="alert alert-danger" role="alert">
                          {{ generationError }}
@@ -153,7 +152,7 @@
  import LoadingSpinner from '@/components/LoadingSpinner.vue';
  import RatingComponent from '@/components/RatingComponent.vue';
  import ContentForm from '@/components/ContentForm.vue';
- import ModelSelector from '@/components/ModelSelector.vue'; // Add this import
+ import ModelSelector from '@/components/ModelSelector.vue';
  import { auth } from '@/firebase';
  import { canGenerateResume, updateLastGenerationDate } from '@/utils/firebaseUtils';
  import { generateContent } from '@/utils/generation';
@@ -167,7 +166,7 @@
      LoadingSpinner,
      RatingComponent,
      ContentForm,
-     ModelSelector, // Add this component
+     ModelSelector,
    },
    setup() {
      const user = ref(auth.currentUser);
@@ -175,162 +174,69 @@
      const selectedTemplate = ref('');
      const selectedModel = ref('');
      const selectedContentType = ref('');
-     const formInputs = ref({});  // Keep this for compatibility with ContentForm
+     const formInputs = ref({});  // Keep this for compatibility with ContentForm, and for placeholder replacement
      const generatedContent = ref('');
      const isGenerating = ref(false);
      const showRating = ref(false);
      const generationError = ref(''); // Add error ref
  
  
-     const contentTypes = [
-         {
-         id: 'resume',
-         name: 'Resume',
-         icon: 'bi bi-file-person',
-         description: 'Professional resume with customizable sections',
-         fields: [ // Keep for compatibility with ContentForm
-           { name: 'fullName', label: 'Full Name', type: 'text', required: true },
-           { name: 'email', label: 'Email', type: 'text', inputType: 'email', required: true },
-           { name: 'phone', label: 'Phone Number', type: 'text', inputType: 'tel' },
-           { key: 'linkedin', label: 'LinkedIn Profile (URL)', type: 'text', inputType: 'url' },
-             { key: 'github', label: 'GitHub Profile (URL)', type: 'text', inputType: 'url' },
-           { key: 'summary', label: 'Summary', type: 'textarea', required: true },
-             { key: 'workExperience', label: 'Work Experience', type: 'list', placeholder: 'Company, Title, Dates, Responsibilities' },
-             { key: 'education', label: 'Education', type: 'list', placeholder: 'Institution, Degree, Dates' },
-             { key: 'skills', label: 'Skills', type: 'list', placeholder: 'Add a skill' },
-         ]
-       },
-       {
-         id: 'social-post',
-         name: 'Social Media Post',
-         icon: 'bi bi-instagram',
-         description: 'Engaging social media content for any platform',
-         fields: [
-           { name: 'platform', label: 'Platform', type: 'select', required: true,
-             options: ['Instagram', 'LinkedIn', 'Twitter', 'Facebook'] },
-           { name: 'topic', label: 'Topic', type: 'text', required: true },
-           { name: 'targetAudience', label: 'Target Audience', type: 'text', required: true },
-           { name: 'tone', label: 'Tone', type: 'select', required: true,
-             options: ['Professional', 'Casual', 'Friendly', 'Humorous'] },
-           { name: 'keyPoints', label: 'Key Points', type: 'textarea', required: true },
-           { name: 'callToAction', label: 'Call to Action', type: 'text', required: true }
-         ]
-       },
-       {
-         id: 'poster',
-         name: 'Poster',
-         icon: 'bi bi-image',
-         description: 'Eye-catching posters for events and promotions',
-         fields: [
-            { key: 'title', label: 'Title', type: 'text', required: true },
-             { key: 'subtitle', label: 'Subtitle', type: 'text' },
-             { key: 'body', label: 'Body Text', type: 'textarea', required: true },
-             { key: 'callToAction', label: 'Call to Action', type: 'text' },
-             { key: 'contactInfo', label: 'Contact Information', type: 'text' },
-         ]
-       },
-        {
-         id: 'cover-letter',
-         name: 'Cover Letter',
-         icon: 'bi bi-envelope-open',
-         description: 'Personalized cover letters for job applications.',
-         fields: [
-           { name: 'companyName', label: 'Company Name', type: 'text', required: true },
-           { name: 'jobTitle', label: 'Job Title', type: 'text', required: true },
-           { name: 'hiringManager', label: 'Hiring Manager Name (optional)', type: 'text' },
-           { name: 'introduction', label: 'Introduction Paragraph', type: 'textarea', required: true },
-           { name: 'body', label: 'Body Paragraphs', type: 'textarea', required: true },
-           { name: 'conclusion', label: 'Conclusion Paragraph', type: 'textarea', required: true },
-         ]
-       },
-        {
-         id: 'linkedin-about',
-         name: 'LinkedIn About Me',
-         icon: 'bi bi-linkedin',
-         description: 'Compelling LinkedIn "About Me" section.',
-         fields: [
-           { name: 'headline', label: 'Headline', type: 'text', required: true },
-           { name: 'summary', label: 'Summary', type: 'textarea', required: true },
-           { name: 'keywords', label: 'Keywords (comma-separated)', type: 'text', required: true },
-           { name: 'experienceHighlights', label: 'Experience Highlights', type: 'textarea', required: true },
-         ]
-       },
-       {
-         id: 'blog-ideas',
-         name: 'Blog Post Ideas',
-         icon: 'bi bi-lightbulb',
-         description: 'Generate creative blog post ideas and outlines.',
-         fields: [
-           { name: 'topic', label: 'Topic', type: 'text', required: true },
-           { name: 'keywords', label: 'Keywords (comma-separated)', type: 'text', required: true },
-           { name: 'targetAudience', label: 'Target Audience', type: 'text', required: true },
-           { name: 'angle', label: 'Angle/Perspective', type: 'text', required: true },
-         ]
-       },
-         {
-         id: 'social-ad-copy',
-         name: 'Social Media Ad Copy',
-         icon: 'bi bi-badge-ad', 
-         description: 'Write short, persuasive text for your social media ads.',
-         fields: [
-           { name: 'platform', label: 'Platform', type: 'select', required: true,
-            options:['Instagram', 'Facebook', 'LinkedIn', 'Twitter']},
-           { name: 'product', label: 'Product/Service', type: 'text', required: true },
-           { name: 'targetAudience', label: 'Target Audience', type: 'text', required: true },
-           { name: 'keyBenefit', label: 'Key Benefit', type: 'text', required: true },
-           { name: 'callToAction', label: 'Call to Action', type: 'text', required: true },
-         ],
-       },
-       {
-     id: 'email-marketing',
-     name: 'Email Marketing',
-     icon: 'bi bi-envelope', 
-     description: 'Create effective email marketing content.',
-     fields: [
-       { name: 'emailType', label: 'Email Type', type: 'select', required: true, options: ['Newsletter', 'Promotional', 'Transactional'] },
-       { name: 'subjectLine', label: 'Subject Line', type: 'text', required: true },
-       { name: 'preheader', label: 'Preheader Text', type: 'text' },
-       { name: 'body', label: 'Body Content', type: 'textarea', required: true },
-       { name: 'callToAction', label: 'Call to Action', type: 'text', required: true },
-     ],
-   },
-     {
-     id: 'website-headlines',
-     name: 'Website Headlines',
-     icon: 'bi bi-window',
-     description: 'Generate catchy website headlines and subheadings.',
-     fields: [
-         { name: 'pageType', label: 'Page Type', type: 'select', required: true, options: ['Landing Page', 'Product Page', 'Blog Page'] },
-         { name: 'productOrService', label: 'Product/Service', type: 'text', required: true },
-         { name: 'targetAudience', label: 'Target Audience', type: 'text', required: true },
-         { name: 'keyBenefit', label: 'Key Benefit/Value Proposition', type: 'text', required: true },
-     ],
-   },
-     {
-     id: 'product-descriptions',
-     name: 'Product Descriptions',
-     icon: 'bi bi-box', 
-     description: 'Craft compelling descriptions for your products.',
-     fields: [
-         { name: 'productName', label: 'Product Name', type: 'text', required: true },
-         { name: 'keyFeatures', label: 'Key Features (comma-separated)', type: 'text', required: true },
-         { name: 'benefits', label: 'Benefits', type: 'textarea', required: true },
-         { name: 'targetAudience', label: 'Target Audience', type: 'text', required: true },
-     ],
-   },
-     {
-     id: 'youtube-content',
-     name: 'YouTube Titles/Descriptions',
-     icon: 'bi bi-youtube', 
-     description: 'Generate eye-catching YouTube titles and descriptions.',
-     fields: [
-       { name: 'videoTopic', label: 'Video Topic', type: 'text', required: true },
-       { name: 'keywords', label: 'Keywords (comma-separated)', type: 'text', required: true },
-       { name: 'targetAudience', label: 'Target Audience', type: 'text', required: true },
-       { name: 'keyPoints', label: 'Key Points (for Description)', type: 'textarea', required: true },
-     ],
-   },
-     ];
+    const contentTypes = [
+      {
+        id: 'resume',
+        name: 'Resume',
+        icon: 'bi bi-file-person',
+        description: 'Professional resume with customizable sections',
+      },
+      {
+        id: 'social-post',
+        name: 'Social Media Post',
+        icon: 'bi bi-instagram',
+        description: 'Engaging social media content for any platform',
+      },
+      {
+        id: 'poster',
+        name: 'Poster',
+        icon: 'bi bi-image',
+        description: 'Eye-catching posters for events and promotions',
+      },
+      {
+        id: 'email-marketing',
+        name: 'Email Marketing',
+        icon: 'bi bi-envelope',
+        description: 'Create effective email marketing content.',
+      },
+      {
+        id: 'product-descriptions',
+        name: 'Product Descriptions',
+        icon: 'bi bi-box',
+        description: 'Craft compelling descriptions for your products.',
+      },
+      {
+        id: 'social-ad-copy',
+        name: 'Social Media Ad Copy',
+        icon: 'bi bi-badge-ad',
+        description: 'Write short, persuasive text for your social media ads.',
+      },
+      {
+        id: 'business-proposals',
+        name: 'Business Proposals',
+        icon: 'bi bi-briefcase',
+        description: 'Create detailed and professional business proposals.',
+      },
+      {
+        id: 'website-copy',
+        name: 'Website Copy',
+        icon: 'bi bi-globe',
+        description: 'Generate compelling content for various website pages.',
+      },
+      {
+        id: 'press-releases',
+        name: 'Press Releases',
+        icon: 'bi bi-newspaper',
+        description: 'Craft formal press releases for news and announcements.',
+      },
+    ];
  
      const availableModels = [
        {
@@ -371,28 +277,13 @@
        }
      ];
  
-      //Watch for selectedContentType changes and update formInputs
+      //Initialize and reset formInputs
    watch(() => selectedContentType.value, (newContentType) => {
      if (newContentType) {
-       // Find the selected content type object
        const selectedType = contentTypes.find(type => type.id === newContentType);
- 
-       // Clear the current form inputs
-       formInputs.value = {};
- 
-       // Initialize form inputs based on the new content type's fields
-       if (selectedType && selectedType.fields) {
-         selectedType.fields.forEach(field => {
-           //Initialize List to Empty
-           if(field.type === 'list'){
-              formInputs.value[field.key] = [];
-           } else {
-            formInputs.value[field.name] = ''; // For other field types
-           }
-         });
-       }
+       formInputs.value = {}; // Clear previous
      }
-   }, { immediate: true }); // Run this effect immediately on component mount
+   }, { immediate: true });
  
      const handleTemplateSelection = (template) => {
        selectedTemplate.value = template;
@@ -404,13 +295,6 @@
  
      const selectContentType = (typeId) => {
        selectedContentType.value = typeId;
-     };
- 
-     const validateForm = () => {
-       const selectedType = contentTypes.find(type => type.id === selectedContentType.value);
-       return selectedType.fields.every(field => {
-         return !field.required || formInputs.value[field.name];
-       });
      };
  
      const nextStep = () => {
@@ -430,53 +314,32 @@
        generatedContent.value = ''; // Clear generated content
        previousStep();
      };
- 
-     const handleGenerateContent = async (formData) => {
-       console.log('Generate button clicked', formData);
-       generationError.value = ''; // Clear previous error
-       
-       if (!validateForm() || isGenerating.value) {
-         console.log('Form validation failed or generation in progress');
-         return;
-       }
-   
-       isGenerating.value = true;
-       const userId = auth.currentUser?.uid;
-   
-       try {
-         if (!userId) {
-           throw new Error('User not authenticated');
-         }
-   
-         if (!(await canGenerateResume(userId))) {
-           throw new Error('Daily generation limit reached. Please try again tomorrow.');
-         }
-   
-         console.log('Calling generateContent with:', {
-           formData,
-           template: selectedTemplate.value,
-           model: selectedModel.value,
-           contentType: selectedContentType.value
-         });
-   
-         const result = await generateContent(
-           formData.formData,
-           selectedTemplate.value,
-           selectedModel.value,
-           selectedContentType.value
-         );
-   
-         console.log('Generation result:', result);
-         generatedContent.value = result.html;
-         await updateLastGenerationDate(userId);
-         showRating.value = true;
-       } catch (error) {
-         console.error('Generation error:', error);
-         generationError.value = error.message;
-       } finally {
-         isGenerating.value = false;
-       }
-     };
+
+   const handleGenerateContent = async (formData) => {
+    generationError.value = '';
+    isGenerating.value = true;
+    const userId = auth.currentUser?.uid;
+
+    try {
+        if (!userId) throw new Error('User not authenticated');
+        if (!(await canGenerateResume(userId))) throw new Error('Daily generation limit reached.');
+
+        const result = await generateContent(
+            formData.formData,
+            selectedTemplate.value,
+            selectedModel.value,
+            selectedContentType.value
+        );
+        generatedContent.value = result.html;
+        await updateLastGenerationDate(userId);
+        showRating.value = true;
+
+    } catch (error) {
+        generationError.value = error.message;
+    } finally {
+        isGenerating.value = false;
+    }
+};
  
      const handleRatingSubmitted = () => {
        showRating.value = false;
@@ -511,7 +374,6 @@
        handleTemplateSelection,
        selectModel,
        selectContentType,
-       validateForm,
        nextStep,
        previousStep,
        handleGenerateContent, // Changed to use new function
