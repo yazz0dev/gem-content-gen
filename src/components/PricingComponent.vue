@@ -46,43 +46,23 @@
           </div>
         </div>
 
-        <!-- Standard Pack -->
+        <!-- Standard/Premium Pack -->
         <div class="col-md-4 mb-4">
            <div class="card pricing-card">
             <div class="card-body">
               <h5 class="card-title">Standard</h5>
-              <h6 class="card-subtitle mb-2 text-muted">Best Value</h6>
-              <p class="card-text price">~$15-20</p>
-             <p class="card-text credits">Credits: TBD</p>
+              <h6 class="card-subtitle mb-2 text-muted">Full Featured</h6>
+              <p class="card-text price">~$25</p>
+              <p class="card-text credits">Credits: TBD</p>
               <ul class="list-unstyled">
-                 <li><i class="bi bi-check-circle-fill text-success me-2"></i>Gemini 2.0 Flash-Lite, Flash, Pro-Exp</li>
+                 <li><i class="bi bi-check-circle-fill text-success me-2"></i>All Models</li>
                 <li><i class="bi bi-check-circle-fill text-success me-2"></i>All Content Types</li>
                 <li><i class="bi bi-check-circle-fill text-success me-2"></i>All Templates</li>
-                <li><i class="bi bi-check-circle-fill text-success me-2"></i>Some Advanced Features</li>
-                  <li><i class="bi bi-x-circle-fill text-danger me-2"></i>Limited Custom Prompts</li>
+                <li><i class="bi bi-check-circle-fill text-success me-2"></i>All Advanced Features</li>
+                <li><i class="bi bi-check-circle-fill text-success me-2"></i>Full Custom Prompt Capabilities</li>
               </ul>
                <button @click="handleSelectPlan('standard')" class="btn btn-primary w-100">
                 Select Standard
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Premium Pack -->
-        <div class="col-md-4 mb-4">
-          <div class="card pricing-card">
-            <div class="card-body">
-              <h5 class="card-title">Premium</h5>
-              <h6 class="card-subtitle mb-2 text-muted">Full-Featured</h6>
-              <p class="card-text price">~$40-50</p>
-               <p class="card-text credits">Credits: TBD</p>
-               <ul class="list-unstyled">
-                <li><i class="bi bi-check-circle-fill text-success me-2"></i>All Models</li>
-                <li><i class="bi bi-check-circle-fill text-success me-2"></i>All Features Unlocked</li>
-                <li><i class="bi bi-check-circle-fill text-success me-2"></i>Full Custom Prompt Capabilities</li>
-              </ul>
-              <button @click="handleSelectPlan('premium')" class="btn btn-primary w-100">
-                Select Premium
               </button>
             </div>
           </div>
@@ -148,57 +128,56 @@ export default {
 
 <style scoped>
 .pricing-page {
-  padding: 40px 0;
-  background-color: var(--background-color);
+  padding: var(--spacing-xl) 0;
 }
 
 .pricing-card {
+  height: 100%;
   border: none;
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-md);
-  transition: transform 0.2s ease-in-out;
+  transition: transform 0.3s ease;
+  padding: var(--spacing-md);
 }
 
 .pricing-card:hover {
   transform: translateY(-5px);
+  box-shadow: var(--shadow-lg);
 }
 
-.price {
-  font-size: 2rem;
-  font-weight: bold;
+.card-title {
+  font-size: 1.5rem;
+  font-weight: 600;
   color: var(--primary-color);
 }
 
+.card-subtitle {
+  margin-bottom: var(--spacing-md);
+}
+
+.price {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
 .credits {
-  font-size: 1.2rem;
-  font-weight: bold;
   color: var(--text-secondary);
+  margin-bottom: var(--spacing-md);
 }
 
-.btn-primary {
-    background: var(--primary-color);
-    border: none;
-    box-shadow: var(--shadow-md);
-    color: white;
-    padding: var(--spacing-sm) var(--spacing-lg);
-    border-radius: var(--border-radius-md);
-    transition: all 0.2s ease;
-}
-.btn-primary:hover:not(:disabled) {
-    background: var(--primary-hover);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
+ul li {
+  margin-bottom: var(--spacing-xs);
 }
 
-.btn-outline-primary{
-       border: 2px solid var(--primary-color);
-       color:  var(--primary-color);
+.btn {
+  margin-top: var(--spacing-md);
 }
-.btn-outline-primary:hover:not(:disabled) {
-    background: var(--primary-hover);
-     border: 2px solid var(--primary-hover);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
-    color:white;
+
+@media (max-width: 768px) {
+  .pricing-card {
+    margin-bottom: var(--spacing-md);
+  }
 }
 </style>

@@ -7,14 +7,7 @@ import { getUserRole } from './auth'; // Import getUserRole
 // Checks if the user can generate (daily limit, credit check), BYPASSES for admins
 export async function canGenerateResume(userId) {
     try {
-        const userRole = await getUserRole(userId);
-
-        // Admin check first - if admin, always return true
-        if (userRole === 'admin') {
-            return true;
-        }
-
-        // For non-admins, check generation limit (if free user) OR credits (if paid user)
+        // Get user document directly first
         const userRef = doc(db, 'users', userId);
         const userDoc = await getDoc(userRef);
 
@@ -23,8 +16,14 @@ export async function canGenerateResume(userId) {
         }
 
         const userData = userDoc.data();
+        
+        // Check role directly from user document
+        if (userData.role === 'admin') {
+            return true; // Admin can always generate
+        }
 
-        if (userRole === 'user') { // Free user - check daily limit
+        // Rest of the function remains the same for non-admin users
+        if (userData.role === 'user') {
             const lastGeneration = userData.lastGenerationDate;
 
             // Check if lastGenerationDate exists and is a Timestamp object
@@ -39,7 +38,7 @@ export async function canGenerateResume(userId) {
 
             return lastDate < today;
 
-        } else if (userRole === 'paid user') { // Paid user - check credits
+        } else if (userData.role === 'paid user') { // Paid user - check credits
             return userData.credits > 0;
         } else {
             // Handle other roles, or default to no generation allowed.

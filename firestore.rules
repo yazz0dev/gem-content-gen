@@ -1,0 +1,68 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && getUserRole() == 'admin';
+    }
+
+    function isPaidUser() {
+      return isAuthenticated() && getUserRole() == 'paid user';
+    }
+
+    function isValidRating(value) {
+      return value is number && value >= 1 && value <= 5;
+    }
+
+    // Model rate limits collection
+    match /modelRateLimits/{modelId} {
+      // Anyone can read model stats
+      allow read: if true;
+      
+      // Allow updates to rate counters by authenticated users
+      allow update: if isAuthenticated() && 
+                   (request.resource.data.diff(resource.data).affectedKeys()
+                    .hasOnly(['rpm', 'tpm', 'rpd']));
+      
+      // Allow rating submissions with validation
+      allow write: if isAuthenticated() &&
+                  request.resource.data.keys().hasAll(['contentAccuracy', 'formatting', 'overallQuality', 'count']) &&
+                  isValidRating(request.resource.data.contentAccuracy) &&
+                  isValidRating(request.resource.data.formatting) &&
+                  isValidRating(request.resource.data.overallQuality) &&
+                  request.resource.data.count is number;
+    }
+
+    // Users collection
+    match /users/{userId} {
+      // Read permissions
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      
+      // Create new user document
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      
+      // Update permissions with field validation
+      allow update: if isAuthenticated() && 
+                   (
+                     // User can update their own lastGenerationDate
+                     (request.auth.uid == userId && 
+                      request.resource.data.diff(resource.data).affectedKeys()
+                      .hasOnly(['lastGenerationDate'])) ||
+                     // Paid users can update their credits
+                     (isPaidUser() && request.auth.uid == userId && 
+                      request.resource.data.diff(resource.data).affectedKeys()
+                      .hasOnly(['credits'])) ||
+                     // Admins can update anything
+                     isAdmin()
+                   );
+    }
+  }
+}
