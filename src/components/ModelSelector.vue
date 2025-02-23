@@ -38,7 +38,7 @@ export default {
       type: Array,
       required: true,
     },
-    modelValue: {
+    modelValue: {  // No change needed here
       type: String,
       required: true,
     },

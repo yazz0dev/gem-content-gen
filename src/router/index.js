@@ -1,3 +1,5 @@
+
+
 // src/router/index.js
 import { createRouter, createWebHistory } from 'vue-router'
 import AuthForm from '@/components/AuthForm.vue';
@@ -41,8 +43,8 @@ const routes = [
   {
     path: '/generate',
     name: 'generate',
-    component: GenerationView,  // Use renamed GenerationView
-    meta: { requiresAuth: true } // Requires authentication
+    component: GenerationView,  
+    meta: { requiresAuth: true } 
   },
   {
     path: '/auth',
@@ -55,6 +57,12 @@ const routes = [
     component: LeaderboardComponent,
     meta: { requiresAuth: true }
   },
+    {
+        path: '/pricing', // Add pricing route
+        name: 'pricing',
+        component: () => import('@/components/PricingComponent.vue'), // Lazy-load for better performance.
+        // No auth required to *view* pricing.
+    },
   {
     path: '/:pathMatch(.*)*', // Catch-all route for 404
     name: 'not-found',

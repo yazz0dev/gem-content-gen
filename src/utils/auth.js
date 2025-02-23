@@ -1,28 +1,25 @@
-// src/utils/auth.js
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
-  sendPasswordResetEmail as firebaseSendPasswordResetEmail, // Alias to avoid naming conflicts
+  sendPasswordResetEmail as firebaseSendPasswordResetEmail,
   getAuth
 } from 'firebase/auth';
-import { setDoc, doc } from 'firebase/firestore';
+import { setDoc, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 const auth = getAuth();
 
 const handleAuthError = (error) => {
   console.error('Auth error:', error);
-  
-  // Network connection errors
+
   if (!navigator.onLine) {
     throw new Error('No internet connection. Please check your network.');
   }
-  
+
   if (error.code === 'auth/network-request-failed') {
     throw new Error('Connection failed. Please try again.');
   }
 
-  // Common auth errors
   const errorMessages = {
     'auth/user-not-found': 'No account found with this email.',
     'auth/wrong-password': 'Invalid email or password.',
@@ -37,41 +34,54 @@ const handleAuthError = (error) => {
 
 async function signup(email, password) {
   try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
 
-      // Create a user document in Firestore
-      await setDoc(doc(db, "users", user.uid), {
-          lastGenerationDate: null, // Initialize lastGenerationDate
-          generationCount: 0, // Initialize generation count.  *CRITICAL*
-      });
+    // Create a user document in Firestore, initializing with 'user' role.
+    await setDoc(doc(db, "users", user.uid), {
+      lastGenerationDate: null,
+      generationCount: 0,
+      role: 'user', // Default role is 'user'
+      credits: 0, // Initialize credits to 0
+    });
   } catch (error) {
-      throw handleAuthError(error);
+    throw handleAuthError(error);
   }
 }
 
 async function login(email, password) {
   try {
-      await signInWithEmailAndPassword(auth, email, password);
+    await signInWithEmailAndPassword(auth, email, password);
   } catch (error) {
-      throw handleAuthError(error);
+    throw handleAuthError(error);
   }
 }
 
 async function signOutUser() {
   try {
-      await signOut(auth);
+    await signOut(auth);
   } catch (error) {
-      throw handleAuthError(error);
+    throw handleAuthError(error);
   }
 }
 
 async function sendPasswordResetEmail(email) {
   try {
-      await firebaseSendPasswordResetEmail(auth, email);
+    await firebaseSendPasswordResetEmail(auth, email);
   } catch (error) {
-     throw handleAuthError(error);
+    throw handleAuthError(error);
   }
+}
+
+// Get User Role (moved here from firebaseUtils)
+async function getUserRole(userId) {
+    if (!userId) return 'guest'; // Or some default
+    const userRef = doc(db, 'users', userId);
+    const userDoc = await getDoc(userRef);
+    if (userDoc.exists()) {
+        return userDoc.data().role || 'user'; // Default to 'user' if role is missing
+    }
+    return 'user'; // Default to user if no document.
 }
 
 // Add connection status monitoring
@@ -85,4 +95,4 @@ export const initializeAuthStatusMonitoring = () => {
   });
 };
 
-export { signup, login, signOutUser, sendPasswordResetEmail };
+export { signup, login, signOutUser, sendPasswordResetEmail, getUserRole };

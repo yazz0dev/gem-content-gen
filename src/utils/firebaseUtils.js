@@ -1,62 +1,101 @@
 // src/utils/firebaseUtils.js
 import { db } from '@/firebase';
-import { doc, getDoc, setDoc, updateDoc, collection, getDocs, increment, serverTimestamp  } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, collection, getDocs, increment, serverTimestamp, runTransaction  } from 'firebase/firestore';
 import { MODEL_LIMITS } from './constants';
+import { getUserRole } from './auth'; // Import getUserRole
 
-// Checks if the user can generate (daily limit), BYPASSES for admins
+// Checks if the user can generate (daily limit, credit check), BYPASSES for admins
 export async function canGenerateResume(userId) {
-  try {
-    // Admin check first - if admin, always return true
-    if (userId && ['uid'].includes(userId)) {
-      return true;
+    try {
+        const userRole = await getUserRole(userId);
+
+        // Admin check first - if admin, always return true
+        if (userRole === 'admin') {
+            return true;
+        }
+
+        // For non-admins, check generation limit (if free user) OR credits (if paid user)
+        const userRef = doc(db, 'users', userId);
+        const userDoc = await getDoc(userRef);
+
+        if (!userDoc.exists()) {
+            return true; // First time user, allow generation
+        }
+
+        const userData = userDoc.data();
+
+        if (userRole === 'user') { // Free user - check daily limit
+            const lastGeneration = userData.lastGenerationDate;
+
+            // Check if lastGenerationDate exists and is a Timestamp object
+            if (!lastGeneration || typeof lastGeneration.toDate !== 'function') {
+                return true;
+            }
+
+            const lastGenerationDate = lastGeneration.toDate();
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const lastDate = new Date(lastGenerationDate.getFullYear(), lastGenerationDate.getMonth(), lastGenerationDate.getDate());
+
+            return lastDate < today;
+
+        } else if (userRole === 'paid user') { // Paid user - check credits
+            return userData.credits > 0;
+        } else {
+            // Handle other roles, or default to no generation allowed.
+            return false;
+        }
+
+
+    } catch (error) {
+        console.error('Error checking generation limit:', error);
+        throw new Error('Unable to check generation limit. Please try again.');
     }
-
-    // For non-admins, check generation limit
-    const userRef = doc(db, 'users', userId);
-    const userDoc = await getDoc(userRef);
-
-    if (!userDoc.exists()) {
-      return true; // First time user, allow generation
-    }
-
-    const userData = userDoc.data();
-    const lastGeneration = userData.lastGenerationDate;
-
-    // Check if lastGenerationDate exists and is a Timestamp object
-    if (!lastGeneration || typeof lastGeneration.toDate !== 'function') {
-        return true;
-    }
-
-    const lastGenerationDate = lastGeneration.toDate();
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const lastDate = new Date(lastGenerationDate.getFullYear(), lastGenerationDate.getMonth(), lastGenerationDate.getDate());
-
-    return lastDate < today;
-  } catch (error) {
-    console.error('Error checking generation limit:', error);
-    throw new Error('Unable to check generation limit. Please try again.');
-  }
 }
 
-// Updates the user's last generation date (ONLY for non-admins)
-export async function updateLastGenerationDate(userId) {
-  // Skip update for admins
-  if (userId && ['uid'].includes(userId)) {
-    return;
-  }
+// Updates the user's last generation date (ONLY for free, non-admin users) and decrements credits (for paid users)
+// AND updates model statistics.  ALL IN A TRANSACTION.
+export async function updateGenerationData(userId, selectedModel) {
+    try {
+        const userRole = await getUserRole(userId);
+        const userRef = doc(db, 'users', userId);
+        const modelRef = doc(db, 'modelRateLimits', selectedModel);
 
-  try {
-    const userRef = doc(db, 'users', userId);
-    await setDoc(userRef, {
-      lastGenerationDate: serverTimestamp()
-    }, { merge: true });
-  } catch (error) {
-    console.error('Error updating generation date:', error);
-    throw new Error('Unable to update generation date. Please try again.');
-  }
+        await runTransaction(db, async (transaction) => {
+            const userDoc = await transaction.get(userRef);
+            const modelDoc = await transaction.get(modelRef); // Get model doc inside transaction
+
+            if (!userDoc.exists()) {
+                throw new Error("User document does not exist."); // Transaction will abort
+            }
+
+            const userData = userDoc.data();
+
+            // --- USER-SPECIFIC UPDATES (Conditional) ---
+            if (userRole === 'admin') {
+                // ADMIN:  Do *NOT* update lastGenerationDate or credits.
+            } else if (userRole === 'user') {
+                // FREE USER: Update lastGenerationDate.
+                transaction.set(userRef, { lastGenerationDate: serverTimestamp() }, { merge: true });
+            } else if (userRole === 'paid user') {
+                // PAID USER: Decrement credits.
+                if (userData.credits <= 0) {
+                    throw new Error("Insufficient credits."); // This will abort the transaction
+                }
+                transaction.update(userRef, { credits: increment(-1) });
+            }
+            // --- MODEL UPDATES (Always) ---
+            // Model updates *always* happen, regardless of user role.
+            transaction.update(modelRef, { rpm: increment(1) });
+
+
+        }); // End of transaction
+
+    } catch (error) {
+        console.error('Error updating generation data:', error);
+        throw new Error(`Unable to update generation data: ${error.message}`);  // More informative error.
+    }
 }
-
 // Correctly submits model ratings
 async function submitModelRating(modelName, ratings) {
   try {
@@ -90,26 +129,26 @@ async function fetchLeaderboardData() {
           contentAccuracy = 0,
           formatting = 0,
           overallQuality = 0,
-          count = 0
+          count = 0,
+          rpm = 0, // Get rpm directly
+          tpm = 0, // and tpm
+          rpd = 0, // and rpd.
         } = data;
 
         const totalScore = contentAccuracy + formatting + overallQuality;
         const averageRating = count > 0 ? (totalScore / (count * 3)) * 5 : 0;
 
-        // Get current usage from localStorage
-        const { currentRPM, currentTPM, currentRPD } = getModelUsage(modelId);
-
         // Determine availability based on rate limits
         const modelLimits = MODEL_LIMITS[modelId] || {};
-        const isModelAvailable = !((currentRPM >= modelLimits.rpm) || (currentTPM >= modelLimits.tpm) || (currentRPD >= modelLimits.rpd));
+        const isModelAvailable = !((rpm >= modelLimits.rpm) || (tpm >= modelLimits.tpm) || (rpd >= modelLimits.rpd));
 
         leaderboardData.push({
           id: modelId,
           averageRating,
           count,
-          rpm: currentRPM,
-          tpm: currentTPM,
-          rpd: currentRPD,
+          rpm: rpm,
+          tpm: tpm,
+          rpd: rpd,
           isAvailable: isModelAvailable,
         });
       }
@@ -123,59 +162,32 @@ async function fetchLeaderboardData() {
   }
 }
 
-// --- Client-Side Rate Limiting (Modified for Admin Bypass) ---
+// --- Client-Side Rate Limiting (Removed - Handled on Backend) ---
 
-function getModelUsage(modelName) {
-    const usageKey = `modelUsage_${modelName}`;
-    let usage = JSON.parse(localStorage.getItem(usageKey) || '{}');
-
-    const now = Date.now();
-    const oneMinute = 60 * 1000;
-    const oneDay = 24 * 60 * oneMinute;
-
-    // Reset RPM and TPM if a minute has passed
-    if (!usage.lastRPMReset || (now - usage.lastRPMReset) > oneMinute) {
-        usage.currentRPM = 0;
-        usage.lastRPMReset = now;
-    }
-    if (!usage.lastTPMReset || (now - usage.lastTPMReset) > oneMinute) {
-        usage.currentTPM = 0;
-        usage.lastTPMReset = now;
-    }
-
-    // Reset RPD if a day has passed
-    if (!usage.lastRPDReset || (now - usage.lastRPDReset) > oneDay) {
-        usage.currentRPD = 0;
-        usage.lastRPDReset = now;
-    }
-    localStorage.setItem(usageKey, JSON.stringify(usage));
-    return usage;
-}
-
-// NO ADMIN CHECK HERE.  Admin check is done in checkModelRateLimit.
-function updateModelUsage(modelName, tokensUsed) {
-    const usage = getModelUsage(modelName);
-    usage.currentRPM += 1;
-    usage.currentTPM += tokensUsed;
-    usage.currentRPD += 1;
-    localStorage.setItem(`modelUsage_${modelName}`, JSON.stringify(usage));
-}
-
-// checkModelRateLimit now properly checks for admin
+// checkModelRateLimit now checks user role
 export const checkModelRateLimit = async (modelName, userId) => {
-  // Admin bypass - if admin, return false (not rate limited)
-  if (userId && ['uid'].includes(userId)) {
-    return false;
-  }
+    const userRole = await getUserRole(userId);
+    if (userRole === 'admin') {
+        return false; // Admins bypass rate limits
+    }
 
-  const modelLimits = MODEL_LIMITS[modelName];
-  if (!modelLimits) {
-    return false;
-  }
+    //  Fetch *current* rate limit data from Firestore.
+    const modelRef = doc(db, 'modelRateLimits', modelName);
+    const modelDoc = await getDoc(modelRef);
 
-  const { rpm, tpm, rpd } = modelLimits;
-  const { currentRPM, currentTPM, currentRPD } = getModelUsage(modelName);
-  return currentRPM >= rpm || currentTPM >= tpm || currentRPD >= rpd;
+    if (!modelDoc.exists()) {
+        return false; // If no data, assume not limited (or handle as you see fit)
+    }
+
+    const modelData = modelDoc.data();
+    const modelLimits = MODEL_LIMITS[modelName];
+      if (!modelLimits) {
+        return false;
+      }
+
+    const { rpm, tpm, rpd } = modelLimits;
+     const { rpm: currentRPM, tpm: currentTPM, rpd: currentRPD } = modelData; // Use names consistent with DB
+    return currentRPM >= rpm || currentTPM >= tpm || currentRPD >= rpd;
 };
 
-export { submitModelRating, fetchLeaderboardData, updateModelUsage };
+export { submitModelRating, fetchLeaderboardData,  };

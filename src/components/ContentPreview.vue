@@ -1,3 +1,7 @@
+---
+File: /src/components/ContentPreview.vue
+---
+
 <!-- src/components/ContentPreview.vue -->
 <template>
   <div class="content-preview">
@@ -51,26 +55,60 @@ export default {
     // Replace placeholders *before* sanitizing
     const processedHtml = computed(() => {
       let html = props.contentHtml;
+      const data = props.contentData || {};
 
       if (props.contentType === 'resume') {
-        // Handle null or undefined values for contentData
-        const data = props.contentData || {};
         html = html.replace(/\[NAME_PLACEHOLDER\]/g, data.fullName || '');
         html = html.replace(/\[EMAIL_PLACEHOLDER\]/g, data.email || '');
         html = html.replace(/\[PHONE_PLACEHOLDER\]/g, data.phone || '');
         html = html.replace(/\[LINKEDIN_PLACEHOLDER\]/g, data.linkedin || '');
         html = html.replace(/\[GITHUB_PLACEHOLDER\]/g, data.github || '');
-
       }
       // Add placeholder replacement for other content types as needed
 
       return html;
     });
 
-    // Sanitize *after* placeholder replacement
+    // Sanitize *after* placeholder replacement and *after* conditional logic
     const finalContent = computed(() => {
-        return DOMPurify.sanitize(processedHtml.value);
+        // 1. Apply conditional logic (v-if equivalent) *before* sanitization
+        let tempDiv = document.createElement('div');
+        tempDiv.innerHTML = processedHtml.value;
+
+        // Resume-specific logic
+        if (props.contentType === 'resume') {
+          const data = props.contentData || {};
+
+          // Helper function to check if a section is empty
+          const isEmpty = (selector) => {
+            const element = tempDiv.querySelector(selector);
+            return !element || element.innerHTML.trim() === '' || element.innerHTML.trim() === 'No work experience listed.'  || element.innerHTML.trim() === 'No education listed.' || element.innerHTML.trim() === 'No skills listed.';
+          };
+            // Conditionally remove sections if they are empty
+            if (isEmpty('.resume-summary') || data.summary === "" || data.summary === null) {
+                const summary = tempDiv.querySelector('.resume-summary');
+                if(summary) summary.remove();
+            }
+              if (isEmpty('.work-experience') || !data.workExperience?.length) {
+                const workExp = tempDiv.querySelector('.work-experience');
+                  if(workExp) workExp.remove();
+            }
+            if (isEmpty('.education-section') || !data.education?.length) {
+                const education = tempDiv.querySelector('.education-section');
+                if(education) education.remove();
+            }
+            if (isEmpty('.skills-section') || !data.skills?.length) {
+               const skills = tempDiv.querySelector('.skills-section');
+                if(skills) skills.remove();
+            }
+
+        }
+         // Add conditional logic for other content types as needed
+
+        // 2. *Now* sanitize the modified HTML
+        return DOMPurify.sanitize(tempDiv.innerHTML);
     });
+
 
 
     const downloadPDF = async () => {

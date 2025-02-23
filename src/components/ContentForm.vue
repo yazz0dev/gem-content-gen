@@ -12,12 +12,27 @@
         </label>
 
         <!-- Text Input -->
-        <Field v-if="field.type === 'text'" :type="field.inputType || 'text'" :id="field.key"
-               :name="field.key"  class="form-control"  />
-
+        <div v-if="field.type === 'text'" class="d-flex align-items-start">
+          <Field :type="field.inputType || 'text'" :id="field.key"
+                 :name="field.key"  class="form-control flex-grow-1"  />
+          <template v-if="field.enhanceable">
+            <div class="form-check ms-3">
+                <input type="checkbox" :id="`${field.key}-enhance`" v-model="formData[`${field.key}Enhance`]" class="form-check-input">
+                <label :for="`${field.key}-enhance`" class="form-check-label small">AI Enhance</label>
+            </div>
+          </template>
+        </div>
         <!-- Textarea -->
-        <Field v-else-if="field.type === 'textarea'" :id="field.key" :name="field.key"
-                  :rows="field.rows || 3" class="form-control"  />
+        <div v-else-if="field.type === 'textarea'" class="d-flex align-items-start">
+          <Field :id="field.key" :name="field.key"
+                 :rows="field.rows || 3" class="form-control flex-grow-1"  />
+           <template v-if="field.enhanceable">
+            <div class="form-check ms-3">
+                <input type="checkbox" :id="`${field.key}-enhance`" v-model="formData[`${field.key}Enhance`]" class="form-check-input">
+                <label :for="`${field.key}-enhance`" class="form-check-label small">AI Enhance</label>
+            </div>
+          </template>
+        </div>
 
         <!-- Select Input -->
         <div v-else-if="field.type === 'select'" class="form-floating">
@@ -42,6 +57,12 @@
                       aria-label="Remove item"></button>
             </span>
           </div>
+           <template v-if="field.enhanceable">
+            <div class="form-check mt-2">
+              <input type="checkbox" :id="`${field.key}-enhance`" v-model="formData[`${field.key}Enhance`]" class="form-check-input">
+              <label :for="`${field.key}-enhance`" class="form-check-label small">AI Enhance</label>
+            </div>
+          </template>
         </div>
 
         <ErrorMessage :name="field.key" class="text-danger mt-1 small" />
@@ -60,14 +81,14 @@
 
 <script>
 import { reactive, ref, computed, watch } from 'vue';
-import { Form as VForm, Field, ErrorMessage } from 'vee-validate'; // Rename Form to VForm
-import * as yup from 'yup'; // Import Yup
+import { Form as VForm, Field, ErrorMessage } from 'vee-validate';
+import * as yup from 'yup';
 
 
 export default {
   name: 'ContentForm',
   components: {
-    VForm, // Use VForm here
+    VForm,
     Field,
     ErrorMessage
   },
@@ -76,18 +97,18 @@ export default {
       type: String,
       required: true,
     },
-    selectedTemplate: { // Keep selectedTemplate
+    selectedTemplate: {
       type: String,
       required: true,
     },
   },
   emits: ['generate-content'],
   setup(props, { emit }) {
-    const formData = reactive({}); // Keep formData for list input compatibility
+    const formData = reactive({});
     const newListValue = ref('');
-    const instructions = ref('');  // For general instructions
+    const instructions = ref('');
     const showInstructions = ref(false);
-    const formSchema = ref(null); // Dynamic schema
+    const formSchema = ref(null);
 
       const formTitle = computed(() => {
       switch (props.contentType) {
@@ -113,7 +134,7 @@ export default {
       switch (props.contentType) {
         case 'resume': return 'Fill in the details below to generate your resume.';
         case 'poster': return 'Enter the text and details for your poster.';
-        case 'social-post': return 'Provide the content and any specifics for your social media post.'; 
+        case 'social-post': return 'Provide the content and any specifics for your social media post.';
         case 'social-ad-copy': return 'Provide the details for your social media ad copy.';
         case 'email-marketing': return 'Fill in the details for your email marketing campaign.';
         case 'product-descriptions': return 'Enter the details for your product descriptions.';
@@ -135,27 +156,27 @@ export default {
             { key: 'phone', label: 'Phone Number', type: 'text', inputType: 'tel' },
             { key: 'linkedin', label: 'LinkedIn Profile (URL)', type: 'text', inputType: 'url' },
             { key: 'github', label: 'GitHub Profile (URL)', type: 'text', inputType: 'url' },
-            { key: 'summary', label: 'Summary', type: 'textarea', required: true },
-            { key: 'workExperience', label: 'Work Experience', type: 'list', placeholder: 'Company, Title, Dates, Responsibilities' },
-            { key: 'education', label: 'Education', type: 'list', placeholder: 'Institution, Degree, Dates' },
-            { key: 'skills', label: 'Skills', type: 'list', placeholder: 'Add a skill' },
+            { key: 'summary', label: 'Summary', type: 'textarea', required: true, enhanceable: true },
+            { key: 'workExperience', label: 'Work Experience', type: 'list', placeholder: 'Company, Title, Dates, Responsibilities', enhanceable: true },
+            { key: 'education', label: 'Education', type: 'list', placeholder: 'Institution, Degree, Dates', enhanceable: true },
+            { key: 'skills', label: 'Skills', type: 'list', placeholder: 'Add a skill', enhanceable: true },
           ];
         case 'poster':
           return [
             { key: 'title', label: 'Title', type: 'text', required: true },
             { key: 'subtitle', label: 'Subtitle', type: 'text' },
-            { key: 'body', label: 'Body Text', type: 'textarea', required: true },
+            { key: 'body', label: 'Body Text', type: 'textarea', required: true, enhanceable: true },
             { key: 'callToAction', label: 'Call to Action', type: 'text' },
             { key: 'contactInfo', label: 'Contact Information', type: 'text' },
           ];
         case 'social-post':
           return [
             { key: 'platform', label: 'Platform', type: 'text', required: true, placeholder: 'e.g., Twitter, Instagram, LinkedIn' },
-            { key: 'content', label: 'Post Content', type: 'textarea', required: true },
+            { key: 'content', label: 'Post Content', type: 'textarea', required: true, enhanceable: true },
             { key: 'hashtags', label: 'Hashtags', type: 'list', placeholder: 'Add a hashtag' },
             { key: 'mentions', label: 'Mentions', type: 'list', placeholder: 'Add a mention' },
           ];
-          
+
         case  'social-ad-copy':
           return [
             { key: 'platform', label: 'Platform', type: 'select', required: true,
@@ -171,25 +192,25 @@ export default {
               { key: 'emailType', label: 'Email Type', type: 'select', required: true, options: ['Newsletter', 'Promotional', 'Transactional'] },
               { key: 'subjectLine', label: 'Subject Line', type: 'text', required: true },
               { key: 'preheader', label: 'Preheader Text', type: 'text' },
-              { key: 'body', label: 'Body Content', type: 'textarea', required: true },
+              { key: 'body', label: 'Body Content', type: 'textarea', required: true, enhanceable: true },
               { key: 'callToAction', label: 'Call to Action', type: 'text', required: true },
             ];
-            
+
          case 'product-descriptions':
           return [
               { key: 'productName', label: 'Product Name', type: 'text', required: true },
               { key: 'keyFeatures', label: 'Key Features (comma-separated)', type: 'text', required: true },
-              { key: 'benefits', label: 'Benefits', type: 'textarea', required: true },
+              { key: 'benefits', label: 'Benefits', type: 'textarea', required: true, enhanceable: true },
               { key: 'targetAudience', label: 'Target Audience', type: 'text', required: true },
           ];
-          
+
            case 'business-proposals': // Added
                 return [
                     { key: 'clientName', label: 'Client Name', type: 'text', required: true },
                     { key: 'projectName', label: 'Project Name', type: 'text', required: true },
-                    { key: 'projectOverview', label: 'Project Overview', type: 'textarea', required: true },
-                    { key: 'objectives', label: 'Objectives', type: 'list', placeholder: 'Add an objective' },
-                    { key: 'scopeOfWork', label: 'Scope of Work', type: 'textarea', required: true },
+                    { key: 'projectOverview', label: 'Project Overview', type: 'textarea', required: true, enhanceable: true },
+                    { key: 'objectives', label: 'Objectives', type: 'list', placeholder: 'Add an objective', enhanceable: true },
+                    { key: 'scopeOfWork', label: 'Scope of Work', type: 'textarea', required: true, enhanceable: true},
                     { key: 'timeline', label: 'Project Timeline', type: 'text' },
                     { key: 'budget', label: 'Budget', type: 'text' },
                 ];
@@ -197,7 +218,7 @@ export default {
                 return [
                     { key: 'pageType', label: 'Page Type', type: 'select', required: true, options: ['Homepage', 'About Us', 'Services', 'Contact Us'] },
                     { key: 'targetAudience', label: 'Target Audience', type: 'text', required: true },
-                    { key: 'keyMessage', label: 'Key Message', type: 'textarea', required: true },
+                    { key: 'keyMessage', label: 'Key Message', type: 'textarea', required: true, enhanceable: true },
                     { key: 'callToAction', label: 'Call to Action', type: 'text' },
                 ];
             case 'press-releases': // Added
@@ -207,7 +228,7 @@ export default {
                     { key: 'city', label: 'City', type: 'text', required: true },
                     { key: 'state', label: 'State', type: 'text', required: true },
                     { key: 'releaseDate', label: 'Release Date', type: 'text', inputType: 'date' },
-                    { key: 'body', label: 'Body Text', type: 'textarea', required: true },
+                    { key: 'body', label: 'Body Text', type: 'textarea', required: true, enhanceable: true },
                     { key: 'contactName', label: 'Contact Name', type: 'text' },
                     { key: 'contactEmail', label: 'Contact Email', type: 'text', inputType: 'email' },
                     { key: 'contactPhone', label: 'Contact Phone', type: 'text', inputType: 'tel' },
@@ -218,12 +239,11 @@ export default {
       }
     });
 
-              // Initialize formData and formSchema
+    // Initialize formData and formSchema
     watch(() => props.contentType, (newContentType) => {
       // Clear existing formData
       Object.keys(formData).forEach(key => delete formData[key]);
 
-      // Create a new schema based on the fields
       const schema = {};
       fields.value.forEach(field => {
           let fieldSchema = yup.string();
@@ -233,13 +253,17 @@ export default {
           if (field.inputType === 'email') {
             fieldSchema = fieldSchema.email('Invalid email format');
           }
-          if (field.inputType === 'tel') {
+           if (field.inputType === 'tel') {
              fieldSchema = fieldSchema.matches(/^\d{10}$/, 'Invalid phone number. Enter a 10-digit number.');
           }
         if (field.type === 'list') {
           formData[field.key] = [];  // Initialize as array
         }  else {
           formData[field.key] = ''; // Initialize other fields
+        }
+        // Add enhanceable fields
+        if(field.enhanceable){
+            formData[`${field.key}Enhance`] = false; // Initialize enhance flag
         }
         schema[field.key] = fieldSchema;
 
@@ -270,15 +294,13 @@ export default {
           }
         });
 
-        // Include instructions and template
         const dataToSend = {
-          formData: { 
-            ...formData, 
-            instructions: instructions.value 
+          formData: {
+            ...formData,
+            instructions: instructions.value
           },
           selectedTemplate: props.selectedTemplate,
         };
-
         await emit('generate-content', dataToSend);
       } catch (error) {
         console.error('Form submission error:', error);
@@ -301,3 +323,16 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+/* Add this to your component's style, or to a global stylesheet */
+.input-enhance-group {
+  display: flex;
+  align-items: center; /* Vertically center the input and checkbox */
+}
+
+.input-enhance-group .form-control {
+  flex-grow: 1; /* Allow the input to take up remaining space */
+  margin-right: 0.5rem; /* Add some space between the input and checkbox */
+}
+</style>

@@ -1,3 +1,6 @@
+---
+File: /src/views/GenerationView.vue
+---
 <template>
   <div class="page-container">
      <!-- Main Content Section -->
@@ -154,8 +157,9 @@
  import ContentForm from '@/components/ContentForm.vue';
  import ModelSelector from '@/components/ModelSelector.vue';
  import { auth } from '@/firebase';
- import { canGenerateResume, updateLastGenerationDate } from '@/utils/firebaseUtils';
+ import { canGenerateResume,  } from '@/utils/firebaseUtils';
  import { generateContent } from '@/utils/generation';
+ import { getUserRole } from '@/utils/auth';
  
  
  export default {
@@ -174,13 +178,12 @@
      const selectedTemplate = ref('');
      const selectedModel = ref('');
      const selectedContentType = ref('');
-     const formInputs = ref({});  // Keep this for compatibility with ContentForm, and for placeholder replacement
+     const formInputs = ref({});
      const generatedContent = ref('');
      const isGenerating = ref(false);
      const showRating = ref(false);
-     const generationError = ref(''); // Add error ref
- 
- 
+     const generationError = ref('');
+
     const contentTypes = [
       {
         id: 'resume',
@@ -277,14 +280,66 @@
        }
      ];
  
-      //Initialize and reset formInputs
-   watch(() => selectedContentType.value, (newContentType) => {
-     if (newContentType) {
-       const selectedType = contentTypes.find(type => type.id === newContentType);
-       formInputs.value = {}; // Clear previous
-     }
-   }, { immediate: true });
- 
+    //Initialize and reset formInputs, and selectedContentType
+    watch(() => selectedContentType.value, (newContentType) => {
+      if (newContentType) {
+        const selectedType = contentTypes.find(type => type.id === newContentType);
+        formInputs.value = {}; // Clear previous form data when content type changes.
+        // Initialize enhance flags
+        const fieldsForType = selectedType ? computed(() => {
+          switch (selectedType.id) {
+            case 'resume':
+              return [
+                { key: 'summary', enhanceable: true },
+                { key: 'workExperience', enhanceable: true },
+                { key: 'education', enhanceable: true },
+                { key: 'skills', enhanceable: true },
+              ];
+            case 'poster':
+               return [
+                 { key: 'body', enhanceable: true },
+               ]
+            case 'social-post':
+               return [
+                 {key: 'content', enhanceable: true}
+               ]
+            case 'email-marketing':
+                return [
+                    {key: 'body', enhanceable: true}
+                ]
+            case 'product-descriptions':
+                return [
+                   {key: 'benefits', enhanceable: true}
+                ]
+            case 'business-proposals':
+                return [
+                   { key: 'projectOverview', enhanceable: true },
+                   { key: 'objectives', enhanceable: true },
+                   { key: 'scopeOfWork', enhanceable: true },
+                ]
+            case 'website-copy':
+                return [
+                  { key: 'keyMessage', enhanceable: true },
+                ]
+             case 'press-releases':
+               return [
+                 { key: 'body', enhanceable: true },
+               ]
+            default:
+              return [];
+          }
+        }).value : [];
+
+        fieldsForType.forEach(field => {
+          if (field.enhanceable) {
+            formInputs.value[`${field.key}Enhance`] = false;
+          }
+        });
+
+      }
+    }, { immediate: true });
+
+
      const handleTemplateSelection = (template) => {
        selectedTemplate.value = template;
      };
@@ -295,10 +350,14 @@
  
      const selectContentType = (typeId) => {
        selectedContentType.value = typeId;
+        // No need to reset currentStep here, it's handled in nextStep()
      };
  
      const nextStep = () => {
-       if (currentStep.value < 4) {
+        if (currentStep.value === 1 && !selectedContentType.value) {
+            return; // Prevent moving to step 2 without selecting a content type
+        }
+      if (currentStep.value < 4) {
          currentStep.value++;
        }
      };
@@ -315,42 +374,39 @@
        previousStep();
      };
 
-   const handleGenerateContent = async (formData) => {
-    generationError.value = '';
-    isGenerating.value = true;
-    const userId = auth.currentUser?.uid;
+    const handleGenerateContent = async (formData) => {
+        generationError.value = '';
+        isGenerating.value = true;
+        const userId = auth.currentUser?.uid;
+        formInputs.value = formData.formData; //Store for content preview
 
-    try {
-        if (!userId) throw new Error('User not authenticated');
-        
-        // Use exact UID match for admin check
-        if (userId !== 'JZHhTYr45NOiIdLbaSaGIDyHT5R2') {
-            if (!(await canGenerateResume(userId))) {
-                throw new Error('Daily generation limit reached.');
+        try {
+            if (!userId) throw new Error('User not authenticated');
+
+            // Use role-based check
+            const userRole = await getUserRole(userId);
+            if (userRole !== 'admin' && !(await canGenerateResume(userId))) {
+                throw new Error('Daily generation limit reached or insufficient credits.');
             }
+
+
+            const result = await generateContent(
+                formData.formData,
+                selectedTemplate.value,
+                selectedModel.value,
+                selectedContentType.value
+            );
+            generatedContent.value = result.html;
+
+
+            showRating.value = true;
+
+        } catch (error) {
+            generationError.value = error.message;
+        } finally {
+            isGenerating.value = false;
         }
-
-        const result = await generateContent(
-            formData.formData,
-            selectedTemplate.value,
-            selectedModel.value,
-            selectedContentType.value
-        );
-        generatedContent.value = result.html;
-
-        // Only update generation date for non-admins
-        if (userId !== 'JZHhTYr45NOiIdLbaSaGIDyHT5R2') {
-            await updateLastGenerationDate(userId);
-        }
-        
-        showRating.value = true;
-
-    } catch (error) {
-        generationError.value = error.message;
-    } finally {
-        isGenerating.value = false;
-    }
-};
+    };
  
      const handleRatingSubmitted = () => {
        showRating.value = false;

@@ -1,6 +1,6 @@
 // src/utils/generation.js
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { updateModelUsage } from "./firebaseUtils";
+import { updateGenerationData } from "./firebaseUtils"; // Use the combined update function
 import { encode } from 'gpt-tokenizer'; // Import the tokenizer
 import { auth } from '@/firebase'; // Import Firebase auth
 
@@ -18,15 +18,18 @@ async function generateContent(formData, selectedTemplate, selectedModel, conten
         // Get current user ID
         const userId = auth.currentUser?.uid;
 
-        // Only update usage stats for non-admins
-        if (userId && userId !== 'JZHhTYr45NOiIdLbaSaGIDyHT5R2') {
-            const inputText = prompt;
-            const outputText = response.text();
-            const inputTokenCount = encode(inputText).length;
-            const outputTokenCount = encode(outputText).length;
-            const totalTokens = inputTokenCount + outputTokenCount;
-            updateModelUsage(selectedModel, totalTokens);
+        // Calculate token usage *before* updating generation data
+        const inputText = prompt;
+        const outputText = response.text();
+        const inputTokenCount = encode(inputText).length;
+        const outputTokenCount = encode(outputText).length;
+        const totalTokens = inputTokenCount + outputTokenCount;
+
+        // Call the combined update function.
+        if (userId) {  // Only update if user is logged in.
+            await updateGenerationData(userId, selectedModel);
         }
+
 
         return { html: generatedHtml };
 
@@ -44,22 +47,44 @@ async function generateContent(formData, selectedTemplate, selectedModel, conten
     }
 }
 
-// ... (rest of your generatePrompt and extractHtmlFromResponse functions remain unchanged) ...
-function generatePrompt(formData, selectedTemplate, contentType) {
-    let prompt = `Generate HTML for a ${contentType} based on the following information.  Apply the CSS class "${selectedTemplate.toLowerCase().replace(/\s+/g, '-')}" to the outermost container element of the generated HTML. Output *only* valid HTML code. Do *not* include any introductory or concluding phrases.
 
-**Template Class:** ${selectedTemplate.toLowerCase().replace(/\s+/g, '-')}
+function generatePrompt(formData, selectedTemplate, contentType) {
+    // --- General Instructions (More Detailed & Robust) ---
+    let prompt = `
+You are a content generation expert.  Create HTML for a ${contentType} based on the information below.  Output *only* valid, well-formed HTML code. Do *not* include any introductory or concluding phrases, explanations, comments, or Markdown.
+
+**Required Structure and Styling:**
+*   Apply the CSS class "${selectedTemplate.toLowerCase().replace(/\s+/g, '-')}" to the outermost container element of the generated HTML.  This class handles all styling.  Do *not* include any inline CSS (style attributes) unless absolutely necessary for basic structural elements (e.g., a container with specific dimensions).
+*   Do *not* include \`<html>\`, \`<head>\`, or \`<body>\` tags.  Provide *only* the fragment that goes *inside* the \`<body>\`.
+*   Use semantic HTML5 elements where appropriate (e.g., \`<article>\`, \`<section>\`, \`<header>\`, \`<footer>\`, \`<nav>\`, etc.).
+*   Ensure the HTML is well-formed and valid.  Properly nest and close all tags.
+*   Pay close attention to details and ensure the output accurately reflects the provided information.
+*   If certain pieces of information are missing, use placeholders judiciously, but prioritize a clean, complete output.
 
 `;
 
-    // --- Content-Specific Instructions ---
+  // --- Content-Specific Instructions ---
     if (contentType === 'resume') {
-      prompt += `
+        prompt += `
 **Resume Information:**
-${formData.summary ? `**Summary:** ${formData.summary}\n` : ''}
-${formData.workExperience ? `**Work Experience:**\n${formData.workExperience.map(exp => `- ${exp}`).join('\n')}\n` : ''}
-${formData.education ? `**Education:**\n${formData.education.map(edu => `- ${edu}`).join('\n')}\n` : ''}
-${formData.skills ? `**Skills:** ${formData.skills.join(', ')}\n` : ''}
+
+${formData.summary ? `**Summary:** ${formData.summaryEnhance ? 'Enhance or rewrite the following summary, making it professional and impactful: ' + formData.summary : formData.summary}\n` : ''}
+
+${formData.workExperience ? `**Work Experience:**\n${formData.workExperience.map(exp => {
+    const [company, title, dates, responsibilities] = exp.split(',').map(item => item.trim());
+    return formData.workExperienceEnhance ?
+        `- Enhance or rewrite the following work experience entry:\n  - Company: ${company || '[Company]'}\n  - Title: ${title || '[Title]'}\n  - Dates: ${dates || '[Dates]'}\n  - Responsibilities: ${responsibilities || '[Responsibilities]'}` :
+        `- Company: ${company || '[Company]'}\n  - Title: ${title || '[Title]'}\n  - Dates: ${dates || '[Dates]'}\n  - Responsibilities: ${responsibilities || '[Responsibilities]'}`;
+}).join('\n')}\n` : ''}
+
+${formData.education ? `**Education:**\n${formData.education.map(edu => {
+    const [institution, degree, dates] = edu.split(',').map(item => item.trim());
+    return formData.educationEnhance ?
+        `- Enhance or rewrite the following education entry:\n  - Institution: ${institution || '[Institution]'}\n  - Degree: ${degree || '[Degree]'}\n  - Dates: ${dates || '[Dates]'}` :
+        `- Institution: ${institution || '[Institution]'}\n  - Degree: ${degree || '[Degree]'}\n  - Dates: ${dates || '[Dates]'}`;
+}).join('\n')}\n` : ''}
+
+${formData.skills ? `**Skills:** ${formData.skillsEnhance ? 'Enhance or rewrite the following skills list:' : ''} ${formData.skills.join(', ')}\n` : ''}
 
 **Personal Information (Placeholders):**
 *   Name: [NAME_PLACEHOLDER]
@@ -73,7 +98,7 @@ ${formData.github ? `*   GitHub: [GITHUB_PLACEHOLDER]\n` : ''}
 **Poster Information:**
 ${formData.title ? `**Title:** ${formData.title}\n` : ''}
 ${formData.subtitle ? `**Subtitle:** ${formData.subtitle}\n` : ''}
-${formData.body ? `**Body Text:** ${formData.body}\n` : ''}
+${formData.body ? `**Body Text:** ${formData.bodyEnhance ? 'Enhance or rewrite the following: ' + formData.body : formData.body}\n` : ''}
 ${formData.callToAction ? `**Call to Action:** ${formData.callToAction}\n` : ''}
 ${formData.contactInfo ? `**Contact Information:** ${formData.contactInfo}\n` : ''}
 `;
@@ -81,7 +106,7 @@ ${formData.contactInfo ? `**Contact Information:** ${formData.contactInfo}\n` : 
         prompt += `
 **Social Media Post Information:**
 ${formData.platform ? `**Platform:** ${formData.platform}\n` : ''}
-${formData.content ? `**Post Content:** ${formData.content}\n` : ''}
+${formData.content ? `**Post Content:** ${formData.contentEnhance ? 'Enhance or rewrite the following: ' + formData.content : formData.content}\n` : ''}
 ${formData.hashtags ? `**Hashtags:**\n${formData.hashtags.map(tag => `- ${tag}`).join('\n')}\n` : ''}
 ${formData.mentions ? `**Mentions:**\n${formData.mentions.map(mention => `- ${mention}`).join('\n')}\n` : ''}
 `;
@@ -101,7 +126,7 @@ ${formData.callToAction ? `**Call to Action:** ${formData.callToAction}\n` : ''}
 ${formData.emailType ? `**Email Type:** ${formData.emailType}\n` : ''}
 ${formData.subjectLine ? `**Subject Line:** ${formData.subjectLine}\n` : ''}
 ${formData.preheader ? `**Preheader Text:** ${formData.preheader}\n` : ''}
-${formData.body ? `**Body Content:** ${formData.body}\n` : ''}
+${formData.body ? `**Body Content:** ${formData.bodyEnhance ? 'Enhance or rewrite the following: ' + formData.body : formData.body}\n` : ''}
 ${formData.callToAction ? `**Call to Action:** ${formData.callToAction}\n` : ''}
        `;
       }  else if(contentType === 'product-descriptions'){
@@ -109,7 +134,7 @@ ${formData.callToAction ? `**Call to Action:** ${formData.callToAction}\n` : ''}
 **Product Descriptions Information:**
 ${formData.productName ? `**Product Name:** ${formData.productName}\n` : ''}
 ${formData.keyFeatures ? `**Key Features:** ${formData.keyFeatures}\n` : ''}
-${formData.benefits ? `**Benefits:** ${formData.benefits}\n` : ''}
+${formData.benefits ? `**Benefits:** ${formData.benefitsEnhance ? 'Enhance or rewrite the following: ' + formData.benefits : formData.benefits}\n` : ''}
 ${formData.targetAudience ? `**Target Audience:** ${formData.targetAudience}\n` : ''}
         `;
 
@@ -118,9 +143,9 @@ ${formData.targetAudience ? `**Target Audience:** ${formData.targetAudience}\n` 
     **Business Proposal Information:**
     ${formData.clientName ? `**Client Name:** ${formData.clientName}\n` : ''}
     ${formData.projectName ? `**Project Name:** ${formData.projectName}\n` : ''}
-    ${formData.projectOverview ? `**Project Overview:**\n${formData.projectOverview}\n` : ''}
+    ${formData.projectOverview ? `**Project Overview:**\n${formData.projectOverviewEnhance ? 'Enhance or rewrite the following: ' + formData.projectOverview : formData.projectOverview}\n` : ''}
     ${formData.objectives ? `**Objectives:**\n${formData.objectives.map(obj => `- ${obj}`).join('\n')}\n` : ''}
-    ${formData.scopeOfWork ? `**Scope of Work:**\n${formData.scopeOfWork}\n` : ''}
+    ${formData.scopeOfWork ? `**Scope of Work:**\n${formData.scopeOfWorkEnhance ? 'Enhance or rewrite the following: ' + formData.scopeOfWork : formData.scopeOfWork}\n` : ''}
     ${formData.timeline ? `**Project Timeline:** ${formData.timeline}\n` : ''}
     ${formData.budget ? `**Budget:** ${formData.budget}\n` : ''}
     `;
@@ -129,7 +154,7 @@ ${formData.targetAudience ? `**Target Audience:** ${formData.targetAudience}\n` 
     **Website Copy Information:**
     ${formData.pageType ? `**Page Type:** ${formData.pageType}\n` : ''}
     ${formData.targetAudience ? `**Target Audience:** ${formData.targetAudience}\n` : ''}
-    ${formData.keyMessage ? `**Key Message:**\n${formData.keyMessage}\n` : ''}
+    ${formData.keyMessage ? `**Key Message:**\n${formData.keyMessageEnhance ? 'Enhance or rewrite the following: ' + formData.keyMessage : formData.keyMessage}\n` : ''}
     ${formData.callToAction ? `**Call to Action:** ${formData.callToAction}\n` : ''}
     `;
         } else if (contentType === 'press-releases') {
@@ -140,7 +165,7 @@ ${formData.targetAudience ? `**Target Audience:** ${formData.targetAudience}\n` 
     ${formData.city ? `**City:** ${formData.city}\n` : ''}
     ${formData.state ? `**State:** ${formData.state}\n` : ''}
     ${formData.releaseDate ? `**Release Date:** ${formData.releaseDate}\n` : ''}
-    ${formData.body ? `**Body Text:**\n${formData.body}\n` : ''}
+    ${formData.body ? `**Body Text:**\n${formData.bodyEnhance ? 'Enhance or rewrite the following: ' + formData.body : formData.body}\n` : ''}
     ${formData.contactName ? `**Contact Name:** ${formData.contactName}\n` : ''}
     ${formData.contactEmail ? `**Contact Email:** ${formData.contactEmail}\n` : ''}
     ${formData.contactPhone ? `**Contact Phone:** ${formData.contactPhone}\n` : ''}
@@ -152,8 +177,7 @@ ${formData.targetAudience ? `**Target Audience:** ${formData.targetAudience}\n` 
         prompt += `\n**Additional Instructions:**\n${formData.instructions}\n`;
     }
 
-      prompt += `\n**Output ONLY the HTML code. Do NOT include HTML, HEAD or BODY tags. Do NOT include inline CSS styles (style attributes) unless necessary for basic structure. Styling is handled externally by the template class. Provide only what goes inside the body.  Do NOT output anything other than the HTML.  No comments. No explanations.  No Markdown.**`;
-    return prompt;
+    return prompt;  // No trailing instructions needed.
 }
 
 function extractHtmlFromResponse(responseText) {
