@@ -1,4 +1,4 @@
-// src/firebase.js
+// src/firebase.js (Initialization ONLY)
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
@@ -17,7 +17,7 @@ const firebaseConfig = {
 if (!firebaseConfig.apiKey || !firebaseConfig.authDomain || !firebaseConfig.projectId) {
   console.error("Firebase configuration is missing!  Please check your environment variables.");
   // You might throw an error here, or handle it in another way, depending on your needs
-  // throw new Error("Firebase configuration is incomplete.");
+   throw new Error("Firebase configuration is incomplete.");
 }
 
 const app = initializeApp(firebaseConfig);

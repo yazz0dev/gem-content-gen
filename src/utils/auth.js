@@ -1,3 +1,4 @@
+// src/utils/auth.js
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,

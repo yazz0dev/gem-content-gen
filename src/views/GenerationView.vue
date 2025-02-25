@@ -88,8 +88,8 @@ File: /src/views/GenerationView.vue
            </div>
          </div>
  
-         <!-- Content Generation -->
-         <div v-if="currentStep === 4" class="step-content">
+          <!-- Content Generation -->
+          <div v-if="currentStep === 4" class="step-content">
            <div class="generation-container">
              <div class="row">
                <div class="col-md-6">
@@ -113,12 +113,28 @@ File: /src/views/GenerationView.vue
                <div class="col-md-6">
                  <div class="preview-section">
                    <h3 class="section-title">Preview</h3>
+
+                   <!-- Editor Toggle -->
+                   <div class="mb-3" v-if="generatedContent">
+                    <button @click="isEditing = !isEditing" class="btn btn-outline-secondary">
+                        {{ isEditing ? 'Exit Editor' : 'Edit Content' }}
+                    </button>
+                    </div>
+
                    <div v-if="generatedContent" class="preview-container">
-                     <ContentPreview
-                       :contentHtml="generatedContent"
+                    <!-- Use ContentEditor when editing -->
+                      <ContentEditor v-if="isEditing"
+                        v-model:contentHtml="editedContent"
+                        :contentType="selectedContentType"
+                        @notification="$emit('notification', $event)"
+                      />
+                       <!-- Use ContentPreview when not editing -->
+                      <ContentPreview v-else
+                       :contentHtml="displayContent"
                        :contentType="selectedContentType"
                        :template="selectedTemplate"
                        :contentData="formInputs"
+                       @notification="$emit('notification', $event)"
                      />
                    </div>
                    <div v-else class="preview-placeholder">
@@ -147,45 +163,49 @@ File: /src/views/GenerationView.vue
      />
    </div>
  </template>
- 
- <script>
- import { ref, onMounted, watch, computed } from 'vue';
- import TemplateSelector from '@/components/TemplateSelector.vue';
- import ContentPreview from '@/components/ContentPreview.vue';
- import LoadingSpinner from '@/components/LoadingSpinner.vue';
- import RatingComponent from '@/components/RatingComponent.vue';
- import ContentForm from '@/components/ContentForm.vue';
- import ModelSelector from '@/components/ModelSelector.vue';
- import { auth } from '@/firebase';
- import { canGenerateResume,  } from '@/utils/firebaseUtils';
- import { generateContent } from '@/utils/generation';
- import { getUserRole } from '@/utils/auth';
- 
- 
- export default {
-   name: 'GenerationView',
-   components: {
-     TemplateSelector,
-     ContentPreview,
-     LoadingSpinner,
-     RatingComponent,
-     ContentForm,
-     ModelSelector,
-   },
-   setup() {
-     const user = ref(auth.currentUser);
-     const currentStep = ref(1);
-     const selectedTemplate = ref('');
-     const selectedModel = ref('');
-     const selectedContentType = ref('');
-     const formInputs = ref({});
-     const generatedContent = ref('');
-     const isGenerating = ref(false);
-     const showRating = ref(false);
-     const generationError = ref('');
-     const apiKeyError = ref('');
 
-    const contentTypes = [
+<script>
+import { ref, onMounted, watch, computed } from 'vue';
+import TemplateSelector from '@/components/ui/TemplateSelector.vue';
+import ContentPreview from '@/components/content/ContentPreview.vue';
+import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
+import RatingComponent from '@/components/ui/RatingComponent.vue';
+import ContentForm from '@/components/content/ContentForm.vue';
+import ModelSelector from '@/components/ModelSelector.vue';
+import ContentEditor from '@/components/content/ContentEditor.vue'; // Import
+import { auth } from '@/firebase';
+import { canGenerateResume,  } from '@/composables/useFirebase';
+import { generateContent } from '@/utils/generation';
+import { getUserRole } from '@/utils/auth';
+
+
+export default {
+  name: 'GenerationView',
+  components: {
+    TemplateSelector,
+    ContentPreview,
+    LoadingSpinner,
+    RatingComponent,
+    ContentForm,
+    ModelSelector,
+    ContentEditor, // Add ContentEditor
+  },
+  setup() {
+    const user = ref(auth.currentUser);
+    const currentStep = ref(1);
+    const selectedTemplate = ref('');
+    const selectedModel = ref('');
+    const selectedContentType = ref('');
+    const formInputs = ref({});
+    const generatedContent = ref('');
+    const isGenerating = ref(false);
+    const showRating = ref(false);
+    const generationError = ref('');
+    const apiKeyError = ref('');
+    const isEditing = ref(false);  // Track editing state
+    const editedContent = ref('');     // Store edited content
+
+   const contentTypes = [
       {
         id: 'resume',
         name: 'Resume',
@@ -241,46 +261,46 @@ File: /src/views/GenerationView.vue
         description: 'Craft formal press releases for news and announcements.',
       },
     ];
- 
-     const availableModels = [
-       {
-         id: 'gemini-2.0-pro-exp-02-05',
-         name: 'Gemini 2.0 Pro',
-         description: 'Most advanced model with highest quality output',
-         icon: 'bi bi-stars',
-         rating: 4.9,
-         speed: 'Slower',
-         quality: 'Very High'
-       },
-       {
-         id: 'gemini-2.0-flash-thinking-exp-01-21',
-         name: 'Gemini 2.0 Flash Thinking',
-         description: 'Balanced performance with high quality results',
-         icon: 'bi bi-lightning-charge',
-         rating: 4.7,
-         speed: 'Moderate',
-         quality: 'High'
-       },
-       {
-         id: 'gemini-2.0-flash',
-         name: 'Gemini 2.0 Flash',
-         description: 'Fast generation with good quality',
-         icon: 'bi bi-lightning',
-         rating: 4.5,
-         speed: 'Fast',
-         quality: 'Moderate'
-       },
-       {
-         id: 'gemini-2.0-flash-lite-preview-02-05',
-         name: 'Gemini 2.0 Flash-Lite',
-         description: 'Fastest generation for simpler tasks',
-         icon: 'bi bi-lightning-fill',
-         rating: 4.3,
-         speed: 'Fast',
-         quality: 'Moderate'
-       }
-     ];
- 
+
+    const availableModels = [
+      {
+        id: 'gemini-2.0-pro-exp-02-05',
+        name: 'Gemini 2.0 Pro',
+        description: 'Most advanced model with highest quality output',
+        icon: 'bi bi-stars',
+        rating: 4.9,
+        speed: 'Slower',
+        quality: 'Very High'
+      },
+      {
+        id: 'gemini-2.0-flash-thinking-exp-01-21',
+        name: 'Gemini 2.0 Flash Thinking',
+        description: 'Balanced performance with high quality results',
+        icon: 'bi bi-lightning-charge',
+        rating: 4.7,
+        speed: 'Moderate',
+        quality: 'High'
+      },
+      {
+        id: 'gemini-2.0-flash',
+        name: 'Gemini 2.0 Flash',
+        description: 'Fast generation with good quality',
+        icon: 'bi bi-lightning',
+        rating: 4.5,
+        speed: 'Fast',
+        quality: 'Moderate'
+      },
+      {
+        id: 'gemini-2.0-flash-lite-preview-02-05',
+        name: 'Gemini 2.0 Flash-Lite',
+        description: 'Fastest generation for simpler tasks',
+        icon: 'bi bi-lightning-fill',
+        rating: 4.3,
+        speed: 'Fast',
+        quality: 'Moderate'
+      }
+    ];
+
     //Initialize and reset formInputs, and selectedContentType
     watch(() => selectedContentType.value, (newContentType) => {
       if (newContentType) {
@@ -340,42 +360,42 @@ File: /src/views/GenerationView.vue
       }
     }, { immediate: true });
 
+    const handleTemplateSelection = (template) => {
+      selectedTemplate.value = template;
+    };
 
-     const handleTemplateSelection = (template) => {
-       selectedTemplate.value = template;
-     };
- 
-     const selectModel = (modelId) => {
-       selectedModel.value = modelId;
-     };
- 
-     const selectContentType = (typeId) => {
-       selectedContentType.value = typeId;
-        // No need to reset currentStep here, it's handled in nextStep()
-     };
- 
-     const nextStep = () => {
-        if (currentStep.value === 1 && !selectedContentType.value) {
+    const selectModel = (modelId) => {
+      selectedModel.value = modelId;
+    };
+
+    const selectContentType = (typeId) => {
+      selectedContentType.value = typeId;
+       // No need to reset currentStep here, it's handled in nextStep()
+    };
+
+    const nextStep = () => {
+       if (currentStep.value === 1 && !selectedContentType.value) {
             return; // Prevent moving to step 2 without selecting a content type
         }
       if (currentStep.value < 4) {
-         currentStep.value++;
-       }
-     };
- 
-     const previousStep = () => {
-       if (currentStep.value > 1) {
-         currentStep.value--;
-       }
-     };
- 
-     const handleBackFromGenerate = () => {
-       generationError.value = ''; // Clear any generation errors
-       generatedContent.value = ''; // Clear generated content
-       previousStep();
-     };
+        currentStep.value++;
+      }
+    };
 
-    const handleGenerateContent = async (formData) => {
+    const previousStep = () => {
+      if (currentStep.value > 1) {
+        currentStep.value--;
+      }
+    };
+
+    const handleBackFromGenerate = () => {
+      generationError.value = ''; // Clear any generation errors
+      generatedContent.value = ''; // Clear generated content
+      isEditing.value = false;
+      previousStep();
+    };
+
+   const handleGenerateContent = async (formData) => {
         generationError.value = '';
         isGenerating.value = true;
         const userId = auth.currentUser?.uid;
@@ -390,17 +410,17 @@ File: /src/views/GenerationView.vue
                 throw new Error('Daily generation limit reached or insufficient credits.');
             }
 
-
             const result = await generateContent(
                 formData.formData,
                 selectedTemplate.value,
                 selectedModel.value,
                 selectedContentType.value
             );
-            generatedContent.value = result.html;
 
-
+            generatedContent.value = result.html; // Initial generated content
+            editedContent.value = result.html;  // Initialize editedContent
             showRating.value = true;
+            isEditing.value = false; // Ensure editor is not shown initially
 
         } catch (error) {
             generationError.value = error.message;
@@ -408,81 +428,89 @@ File: /src/views/GenerationView.vue
             isGenerating.value = false;
         }
     };
- 
-     const handleRatingSubmitted = () => {
-       showRating.value = false;
-       // Optional: Add success message or additional actions
-     };
- 
-     const handleRatingClosed = () => {
-       showRating.value = false;
-     };
- 
-     const formattedContentType = computed(() => {
-       const type = contentTypes.find(t => t.id === selectedContentType.value);
-       return type ? type.name : '';
-     });
 
-     const SESSION_STORAGE_KEY = 'generation_data';
+    const handleRatingSubmitted = () => {
+      showRating.value = false;
+      // Optional: Add success message or additional actions
+    };
 
-     onMounted(() => {
-       const savedData = sessionStorage.getItem(SESSION_STORAGE_KEY);
-       if (savedData) {
-         const data = JSON.parse(savedData);
-         currentStep.value = data.currentStep || 1;
-         selectedTemplate.value = data.selectedTemplate || '';
-         selectedModel.value = data.selectedModel || '';
-         selectedContentType.value = data.selectedContentType || '';
-         formInputs.value = data.formInputs || {};
-       }
-     
-       auth.onAuthStateChanged(currentUser => {
-         user.value = currentUser;
-         if (!currentUser) {
-           sessionStorage.removeItem(SESSION_STORAGE_KEY);
-         }
-       });
-     });
-     
-     watch([currentStep, selectedTemplate, selectedModel, selectedContentType, formInputs], () => {
-       const dataToSave = {
-         currentStep: currentStep.value,
-         selectedTemplate: selectedTemplate.value,
-         selectedModel: selectedModel.value,
-         selectedContentType: selectedContentType.value,
-         formInputs: formInputs.value,
-       };
-       sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(dataToSave));
-     }, { deep: true });
+    const handleRatingClosed = () => {
+      showRating.value = false;
+    };
 
-     return {
-       user,
-       currentStep,
-       selectedTemplate,
-       selectedModel,
-       selectedContentType,
-       formInputs,
-       generatedContent,
-       isGenerating,
-       showRating,
-       contentTypes,
-       availableModels,
-       handleTemplateSelection,
-       selectModel,
-       selectContentType,
-       nextStep,
-       previousStep,
-       handleGenerateContent, // Changed to use new function
-       handleRatingSubmitted,
-       handleRatingClosed,
-       generationError,
-       handleBackFromGenerate,
-       formattedContentType,
-       apiKeyError
-     };
-   }
- };
- </script>
+    const formattedContentType = computed(() => {
+      const type = contentTypes.find(t => t.id === selectedContentType.value);
+      return type ? type.name : '';
+    });
+
+     // Choose what to display in the preview
+    const displayContent = computed(() => {
+      return isEditing.value ? editedContent.value : generatedContent.value;
+    });
+
+    const SESSION_STORAGE_KEY = 'generation_data';
+
+    onMounted(() => {
+      const savedData = sessionStorage.getItem(SESSION_STORAGE_KEY);
+      if (savedData) {
+        const data = JSON.parse(savedData);
+        currentStep.value = data.currentStep || 1;
+        selectedTemplate.value = data.selectedTemplate || '';
+        selectedModel.value = data.selectedModel || '';
+        selectedContentType.value = data.selectedContentType || '';
+        formInputs.value = data.formInputs || {};
+      }
+    
+      auth.onAuthStateChanged(currentUser => {
+        user.value = currentUser;
+        if (!currentUser) {
+          sessionStorage.removeItem(SESSION_STORAGE_KEY);
+        }
+      });
+    });
+    
+    watch([currentStep, selectedTemplate, selectedModel, selectedContentType, formInputs], () => {
+      const dataToSave = {
+        currentStep: currentStep.value,
+        selectedTemplate: selectedTemplate.value,
+        selectedModel: selectedModel.value,
+        selectedContentType: selectedContentType.value,
+        formInputs: formInputs.value,
+      };
+      sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(dataToSave));
+    }, { deep: true });
+
+    return {
+      user,
+      currentStep,
+      selectedTemplate,
+      selectedModel,
+      selectedContentType,
+      formInputs,
+      generatedContent,
+      isGenerating,
+      showRating,
+      contentTypes,
+      availableModels,
+      handleTemplateSelection,
+      selectModel,
+      selectContentType,
+      nextStep,
+      previousStep,
+      handleGenerateContent, // Changed to use new function
+      handleRatingSubmitted,
+      handleRatingClosed,
+      generationError,
+      handleBackFromGenerate,
+      formattedContentType,
+      apiKeyError,
+      isEditing, // Expose editing state
+      editedContent, // Expose edited content
+      displayContent,
+    };
+  }
+};
+</script>
  
  <style scoped>
 .page-container {

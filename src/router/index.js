@@ -2,8 +2,8 @@
 
 // src/router/index.js
 import { createRouter, createWebHistory } from 'vue-router'
-import AuthForm from '@/components/AuthForm.vue';
-import LeaderboardComponent from '@/components/LeaderboardComponent.vue';
+import AuthForm from '@/components/auth/AuthForm.vue';
+import LeaderboardComponent from '@/components/ui/LeaderboardComponent.vue';
 import { auth } from '@/firebase';
 import LoggedOutHomeView from '../views/LoggedOutHomeView.vue'; // Import new view
 import GenerationView from '../views/GenerationView.vue'; // Import renamed view
@@ -60,7 +60,7 @@ const routes = [
     {
         path: '/pricing', // Add pricing route
         name: 'pricing',
-        component: () => import('@/components/PricingComponent.vue'), // Lazy-load for better performance.
+        component: () => import('@/components/ui/PricingComponent.vue'), // Lazy-load for better performance.
         // No auth required to *view* pricing.
     },
   {

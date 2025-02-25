@@ -59,7 +59,7 @@
 
 <script>
 import { ref, onMounted } from 'vue';
-import { fetchLeaderboardData } from '@/utils/firebaseUtils';
+import { fetchLeaderboardData } from '@/api/firebaseUtils';
 import { MODEL_LIMITS } from '@/utils/constants'; // Import MODEL_LIMITS
 
 export default {

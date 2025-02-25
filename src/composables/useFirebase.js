@@ -1,18 +1,17 @@
-// src/utils/firebaseUtils.js
+// src/composables/useFirebase.js (Reusable Firebase logic)
+
 import { db } from '@/firebase';
 import { doc, getDoc, setDoc, updateDoc, collection, getDocs, increment, serverTimestamp, runTransaction } from 'firebase/firestore';
-import { MODEL_LIMITS } from './constants';
-import { getUserRole } from './auth';
+import { MODEL_LIMITS } from '@/utils/constants';
+import { getUserRole } from '@/utils/auth';
+import { ref, onUnmounted } from 'vue';
 
-/**
- * @description Checks if the user can generate a resume based on their role and usage limits.
- * Admins bypass all limits. Free users have a daily limit. Paid users have credit limits.
- * @param {string} userId - The ID of the user.
- * @returns {Promise<boolean>} - True if the user can generate, false otherwise.
- * @throws {Error} - If there is an error checking the generation limit.
- */
-export async function canGenerateResume(userId) {
-    try {
+
+export function useFirebase() {
+
+  const canGenerateResume = async (userId) => {
+
+        try {
         // Get user document directly first
         const userRef = doc(db, 'users', userId);
         const userDoc = await getDoc(userRef);
@@ -70,18 +69,11 @@ export async function canGenerateResume(userId) {
         console.error('Error checking generation limit:', error);
         throw new Error(`Unable to check generation limit: ${error.message}`);
     }
-}
+  };
 
-/**
- * @description Updates user generation data (lastGenerationDate or credits) and model statistics.
- * This operation is performed in a Firestore transaction to ensure data consistency.
- * @param {string} userId - The ID of the user.
- * @param {string} selectedModel - The name of the model used for generation.
- * @returns {Promise<void>}
- * @throws {Error} - If there is an error updating the generation data.
- */
-export async function updateGenerationData(userId, selectedModel) {
-    try {
+  const updateGenerationData = async (userId, selectedModel) => {
+
+     try {
         const userRole = await getUserRole(userId);
         const userRef = doc(db, 'users', userId);
         const modelRef = doc(db, 'modelRateLimits', selectedModel);
@@ -129,17 +121,10 @@ export async function updateGenerationData(userId, selectedModel) {
         console.error('Error updating generation data:', error);
         throw new Error(`Unable to update generation data: ${error.message}`);
     }
-}
+  };
+    const submitModelRating = async (modelName, ratings) => {
 
-/**
- * @description Submits a model rating to Firestore.
- * @param {string} modelName - The name of the model.
- * @param {object} ratings - The rating object {contentAccuracy, formatting, overallQuality}.
- * @returns {Promise<void>}
- * @throws {Error} - If there is an error submitting the rating.
- */
-export async function submitModelRating(modelName, ratings) {
-    try {
+        try {
         const modelRef = doc(db, 'modelRateLimits', modelName);
 
         await updateDoc(modelRef, {
@@ -155,16 +140,11 @@ export async function submitModelRating(modelName, ratings) {
         console.error("Error submitting rating:", error);
         throw new Error(`Failed to submit rating. Please try again: ${error.message}`);
     }
-}
+    };
 
-/**
- * @description Fetches leaderboard data from Firestore.
- * Filters and sorts the data by average rating.
- * @returns {Promise<Array>} - An array of leaderboard entries.
- * @throws {Error} - If there is an error fetching the leaderboard data.
- */
-export async function fetchLeaderboardData() {
-    try {
+    const fetchLeaderboardData = async () => {
+
+          try {
         const leaderboardData = [];
         const querySnapshot = await getDocs(collection(db, 'modelRateLimits'));
 
@@ -209,51 +189,45 @@ export async function fetchLeaderboardData() {
         console.error("Error fetching leaderboard data:", error);
         throw new Error(`Failed to load leaderboard data: ${error.message}`);
     }
-}
+    };
 
-/**
- * @description Checks if a model's rate limit has been reached.
- * Admins bypass rate limits.
- * @param {string} modelName - The name of the model.
- * @param {string} userId - The ID of the user.
- * @returns {Promise<boolean>} - True if the rate limit has been reached, false otherwise.
- * @throws {Error} - If there is an error checking the model rate limit.
- */
-export const checkModelRateLimit = async (modelName, userId) => {
-    try{
-    const userRole = await getUserRole(userId);
-    if (userRole === 'admin') {
-        console.log(`Admin user ${userId} - bypassing model rate limits.`);
-        return false; // Admins bypass rate limits
-    }
+   const checkModelRateLimit = async (modelName, userId) => {
 
-    //  Fetch *current* rate limit data from Firestore.
-    const modelRef = doc(db, 'modelRateLimits', modelName);
-    const modelDoc = await getDoc(modelRef);
-
-    if (!modelDoc.exists()) {
-        console.warn(`Model data not found for ${modelName}. Assuming not limited.`);
-        return false; // If no data, assume not limited (or handle as you see fit)
-    }
-
-    const modelData = modelDoc.data();
-    const modelLimits = MODEL_LIMITS[modelName];
-      if (!modelLimits) {
-        console.warn(`Model limits not defined for ${modelName}. Assuming not limited.`);
-        return false;
-      }
-
-    const { rpm, tpm, rpd } = modelLimits;
-     const { rpm: currentRPM, tpm: currentTPM, rpd: currentRPD } = modelData; // Use names consistent with DB
-    const isLimited = currentRPM >= rpm || currentTPM >= tpm || currentRPD >= rpd;
-        if (isLimited) {
-            console.log(`Model ${modelName} has reached its rate limit.`);
+        try{
+        const userRole = await getUserRole(userId);
+        if (userRole === 'admin') {
+            console.log(`Admin user ${userId} - bypassing model rate limits.`);
+            return false; // Admins bypass rate limits
         }
-        return isLimited;
-    } catch(error){
-        console.error(`Error checking model rate limits: ${error.message}`);
-        throw new Error(`Error checking model rate limits: ${error.message}`);
-    }
-};
 
-export {  };
+        //  Fetch *current* rate limit data from Firestore.
+        const modelRef = doc(db, 'modelRateLimits', modelName);
+        const modelDoc = await getDoc(modelRef);
+
+        if (!modelDoc.exists()) {
+            console.warn(`Model data not found for ${modelName}. Assuming not limited.`);
+            return false; // If no data, assume not limited (or handle as you see fit)
+        }
+
+        const modelData = modelDoc.data();
+        const modelLimits = MODEL_LIMITS[modelName];
+          if (!modelLimits) {
+            console.warn(`Model limits not defined for ${modelName}. Assuming not limited.`);
+            return false;
+          }
+
+        const { rpm, tpm, rpd } = modelLimits;
+        const { rpm: currentRPM, tpm: currentTPM, rpd: currentRPD } = modelData; // Use names consistent with DB
+        const isLimited = currentRPM >= rpm || currentTPM >= tpm || currentRPD >= rpd;
+            if (isLimited) {
+                console.log(`Model ${modelName} has reached its rate limit.`);
+            }
+            return isLimited;
+        } catch(error){
+            console.error(`Error checking model rate limits: ${error.message}`);
+            throw new Error(`Error checking model rate limits: ${error.message}`);
+        }
+    };
+
+  return { canGenerateResume, updateGenerationData, submitModelRating, fetchLeaderboardData, checkModelRateLimit };
+}

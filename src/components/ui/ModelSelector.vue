@@ -28,7 +28,7 @@
 
 <script>
 import { ref, watchEffect } from 'vue';
-import { checkModelRateLimit } from '@/utils/firebaseUtils'; // Import updated checkModelRateLimit
+import { checkModelRateLimit } from '@/api/firebaseUtils'; // Import updated checkModelRateLimit
 import { auth } from '@/firebase'; // Import auth
 
 export default {
