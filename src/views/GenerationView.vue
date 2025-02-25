@@ -1,3 +1,4 @@
+
 // src/views/GenerationView.vue
 
 <template>
@@ -99,8 +100,8 @@
                  </button>
                </div>
                      <!-- Display Generation Error Here -->
-                     <div v-if="generationError || apiKeyError" class="alert alert-danger" role="alert">
-                         {{ generationError || apiKeyError }}
+                     <div v-if="generationError || apiKeyError || geminiError" class="alert alert-danger" role="alert">
+                         {{ generationError || apiKeyError || geminiError }}
                      </div>
                    <ContentForm
                      :contentType="selectedContentType"
@@ -205,6 +206,7 @@ export default {
         const apiKeyError = ref('');
         const isEditing = ref(false);  // Track editing state
         const editedContent = ref('');     // Store edited content
+        const geminiError = ref(''); //Gemini Error
 
         const { showNotification } = useNotifications(); // Use the composable
 
@@ -409,6 +411,7 @@ export default {
 
         const handleGenerateContent = async (formData) => {
             generationError.value = '';
+            geminiError.value = ''; //Resets Gemini Error
             isGenerating.value = true;
             const userId = auth.currentUser?.uid;
             formInputs.value = formData.formData; //Store for content preview
@@ -435,7 +438,13 @@ export default {
                 isEditing.value = false; // Ensure editor is not shown initially
 
             } catch (error) {
-                generationError.value = error.message;
+                //generationError.value = error.message;
+                if (error.message === "Please sign in or provide a developer API key."){
+                    geminiError.value = "Please sign in or provide a developer API key."
+                }
+                else{
+                    generationError.value = error.message
+                }
             } finally {
                 isGenerating.value = false;
             }
@@ -524,7 +533,8 @@ export default {
             isEditing,
             editedContent,
             displayContent,
-            handleNotification
+            handleNotification,
+            geminiError
         };
     }
 };

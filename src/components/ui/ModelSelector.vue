@@ -28,7 +28,7 @@
 
 <script>
 import { ref, watchEffect } from 'vue';
-import { checkModelRateLimit } from '@/composables/useFirebase'; // Import updated checkModelRateLimit
+import { checkModelRateLimit } from '@/composables/useFirebase';
 import { auth } from '@/api/firebase.js'; // Import auth
 
 export default {

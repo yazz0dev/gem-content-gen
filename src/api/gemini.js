@@ -1,25 +1,28 @@
-// src/api/gemini.js
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 import { getDeveloperApiKey } from '@/utils/auth';
 import { auth } from '@/api/firebase';
 import DOMPurify from 'dompurify';
 import pLimit from 'p-limit';
 
+// Instead of initializing immediately, create a function to get or create the API client
+let genAIInstance = null;
+
 const getGenAI = () => {
+    if (genAIInstance) return genAIInstance;
+
     const user = auth.currentUser;
     const developerApiKey = getDeveloperApiKey();
 
     if (user) {
-        return new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
+        genAIInstance = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
     } else if (developerApiKey) {
-        return new GoogleGenerativeAI(developerApiKey);
+        genAIInstance = new GoogleGenerativeAI(developerApiKey);
     } else {
         throw new Error("Please sign in or provide a developer API key.");
     }
-}
 
-// Initialize genAI *outside* the function, so it's only done once.
-const genAI = getGenAI();
+    return genAIInstance;
+};
 
 // Define the tools (functions) that Gemini can call
 const tools = [
@@ -34,30 +37,82 @@ const tools = [
                         contentType: {
                             type: "string",
                             description: "The type of content to generate (e.g., resume, poster, social-post).",
+                            enum: ["resume", "poster", "social-post", "social-ad-copy", "email-marketing", 
+                                 "product-descriptions", "business-proposals", "website-copy", "press-releases"]
                         },
                         formData: {
                             type: "object",
                             description: "An object containing the data to use for content generation.",
+                            properties: {
+                                // Resume properties
+                                fullName: { type: "string" },
+                                email: { type: "string" },
+                                phone: { type: "string" },
+                                linkedin: { type: "string" },
+                                github: { type: "string" },
+                                summary: { type: "string" },
+                                workExperience: { 
+                                    type: "array",
+                                    items: { type: "string" }
+                                },
+                                education: {
+                                    type: "array",
+                                    items: { type: "string" }
+                                },
+                                skills: {
+                                    type: "array",
+                                    items: { type: "string" }
+                                },
+                                // Poster properties
+                                title: { type: "string" },
+                                subtitle: { type: "string" },
+                                body: { type: "string" },
+                                callToAction: { type: "string" },
+                                contactInfo: { type: "string" },
+                                // Social post properties
+                                platform: { type: "string" },
+                                content: { type: "string" },
+                                hashtags: {
+                                    type: "array",
+                                    items: { type: "string" }
+                                },
+                                mentions: {
+                                    type: "array",
+                                    items: { type: "string" }
+                                }
+                            }
                         },
                         selectedTemplate: {
                             type: "string",
-                            description: "Name of template to use.",
+                            description: "Name of template to use."
                         },
                         instructions: {
                             type: "string",
-                            description: "Additional instructions (optional).",
+                            description: "Additional instructions (optional)."
                         },
                         enhanceFlags: {
                             type: "object",
                             description: "Object containing keys for enhanced content",
+                            properties: {
+                                summaryEnhance: { type: "boolean" },
+                                workExperienceEnhance: { type: "boolean" },
+                                educationEnhance: { type: "boolean" },
+                                skillsEnhance: { type: "boolean" },
+                                bodyEnhance: { type: "boolean" },
+                                contentEnhance: { type: "boolean" },
+                                titleEnhance: { type: "boolean" },
+                                benefitsEnhance: { type: "boolean" },
+                                projectOverviewEnhance: { type: "boolean" },
+                                scopeOfWorkEnhance: { type: "boolean" },
+                                keyMessageEnhance: { type: "boolean" }
+                            }
                         }
                     },
-                    required: ["contentType", "formData", "selectedTemplate"],
-                },
-            },
-            // ... You could add more functions here if needed ...
-        ],
-    },
+                    required: ["contentType", "formData", "selectedTemplate"]
+                }
+            }
+        ]
+    }
 ];
 
 //Safety Settings
@@ -87,6 +142,29 @@ const limit = pLimit(10); // Limit to 10 concurrent requests (adjust based on yo
 export async function generateContentWithGemini(formData, selectedTemplate, selectedModel, contentType) {
     return limit(async () => {
         try {
+            // Validate required fields based on content type
+            if (contentType === 'email-marketing') {
+                if (!formData.emailType) throw new Error("Email type is required");
+                if (!formData.subjectLine) throw new Error("Subject line is required");
+                if (!formData.body) throw new Error("Email body is required");
+                
+                // Ensure formData is properly structured
+                formData = {
+                    ...formData,
+                    emailType: formData.emailType || '',
+                    subjectLine: formData.subjectLine || '',
+                    preheader: formData.preheader || '',
+                    body: formData.body || '',
+                    callToAction: formData.callToAction || ''
+                };
+            }
+            // Add similar validation for other content types...
+
+            if (!selectedTemplate) {
+                throw new Error("Please select a template before generating content");
+            }
+
+            const genAI = getGenAI(); // Get the API client when needed
             const model = genAI.getGenerativeModel({ model: selectedModel, tools, safetySettings });
 
             const prompt = `Generate content for a ${contentType}. Use the provided function call.`;

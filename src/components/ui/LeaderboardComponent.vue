@@ -1,3 +1,4 @@
+// src/components/ui/LeaderboardComponent.vue
 <template>
   <div class="leaderboard-container">
     <h2 class="leaderboard-title">Model Leaderboard</h2>
@@ -58,9 +59,10 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useFirebase, fetchLeaderboardData } from '@/composables/useFirebase.js'; // Update import
-import { MODEL_LIMITS } from '@/utils/constants'; 
+import { MODEL_LIMITS } from '@/utils/constants';
+import { auth } from '@/api/firebase';
 
 export default {
   name: 'LeaderboardComponent',
@@ -68,12 +70,38 @@ export default {
     const leaderboardData = ref([]);
     const loading = ref(true);
     const error = ref(null);
+    const { checkModelRateLimit } = useFirebase();
+
+      const getModelLimit = (modelId, limitType) => {
+      const modelLimits = MODEL_LIMITS[modelId];
+      return modelLimits ? modelLimits[limitType] : 'N/A'; // Return limit or 'N/A'
+    };
+
+        // Computed property to determine model availability
+    const modelsWithAvailability = computed(() => {
+      return leaderboardData.value.map(model => ({
+        ...model,
+        isAvailable: !model.isRateLimited,
+      }));
+    });
 
     onMounted(async () => {
       try {
-        leaderboardData.value = await fetchLeaderboardData();
+        const userId = auth.currentUser ? auth.currentUser.uid : null;
+        let fetchedData = await fetchLeaderboardData();
+
+        // Check rate limits for each model and add isRateLimited property
+        const rateLimitChecks = fetchedData.map(model =>
+          checkModelRateLimit(model.id, userId)
+            .then(isRateLimited => ({ ...model, isRateLimited }))
+        );
+
+        // Wait for all rate limit checks to complete
+        leaderboardData.value = await Promise.all(rateLimitChecks);
+
       } catch (err) {
-        error.value = err.message;
+        console.error("Failed to fetch leaderboard or check rate limits:", err); // More specific error
+        error.value = "Failed to load leaderboard data. Please try again later.";  // User-friendly message
       } finally {
         loading.value = false;
       }
@@ -89,12 +117,7 @@ export default {
         }
     }
 
-      const getModelLimit = (modelId, limitType) => {
-      const modelLimits = MODEL_LIMITS[modelId];
-      return modelLimits ? modelLimits[limitType] : 'N/A'; // Return limit or 'N/A'
-    };
-
-    return { leaderboardData, loading, error, getStarClass, getModelLimit };
+    return { leaderboardData: modelsWithAvailability, loading, error, getStarClass, getModelLimit }; // Return computed models
   }
 };
 </script>

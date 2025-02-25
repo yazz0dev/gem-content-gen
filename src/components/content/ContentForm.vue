@@ -76,6 +76,86 @@
 
       <button type="submit" class="btn btn-primary w-100">Generate</button>
     </VForm>
+
+    <!-- Email Marketing Form -->
+    <div v-if="contentType === 'email-marketing'" class="email-marketing-form">
+      <div class="form-group mb-3">
+        <label for="emailType">Email Type*</label>
+        <select 
+          v-model="formData.emailType" 
+          class="form-control" 
+          id="emailType" 
+          required
+        >
+          <option value="">Select email type</option>
+          <option value="newsletter">Newsletter</option>
+          <option value="promotional">Promotional</option>
+          <option value="welcome">Welcome Email</option>
+          <option value="announcement">Announcement</option>
+        </select>
+      </div>
+
+      <div class="form-group mb-3">
+        <label for="subjectLine">Subject Line*</label>
+        <input 
+          v-model="formData.subjectLine" 
+          type="text" 
+          class="form-control" 
+          id="subjectLine" 
+          required
+        />
+      </div>
+
+      <div class="form-group mb-3">
+        <label for="preheader">Preheader Text (optional)</label>
+        <input 
+          v-model="formData.preheader" 
+          type="text" 
+          class="form-control" 
+          id="preheader"
+        />
+      </div>
+
+      <div class="form-group mb-3">
+        <label for="emailBody">Email Body*</label>
+        <textarea 
+          v-model="formData.body" 
+          class="form-control" 
+          id="emailBody" 
+          rows="5" 
+          required
+        ></textarea>
+        <div class="form-check mt-2">
+          <input 
+            type="checkbox" 
+            class="form-check-input" 
+            id="bodyEnhance" 
+            v-model="formData.bodyEnhance"
+          />
+          <label class="form-check-label" for="bodyEnhance">
+            Enhance content
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group mb-3">
+        <label for="callToAction">Call to Action</label>
+        <input 
+          v-model="formData.callToAction" 
+          type="text" 
+          class="form-control" 
+          id="callToAction"
+        />
+      </div>
+
+      <button 
+        @click="handleSubmit" 
+        class="btn btn-primary" 
+        :disabled="!isValid"
+      >
+        Generate Email
+      </button>
+    </div>
   </div>
 </template>
 
@@ -307,6 +387,15 @@ export default {
       }
     };
 
+    const isValid = computed(() => {
+      if (props.contentType === 'email-marketing') {
+        return formData.value.emailType && 
+               formData.value.subjectLine && 
+               formData.value.body;
+      }
+      return true; // Default to true for other content types
+    });
+
     return {
       formData,
       newListValue,
@@ -319,6 +408,7 @@ export default {
       addListItem,
       removeListItem,
       handleSubmit,
+      isValid,
     };
   }
 };
