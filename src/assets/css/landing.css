@@ -1,7 +1,17 @@
+/* src/assets/css/landing.css */
+
+:root {
+  --primary-color: #4158D0;
+  --secondary-color: #C850C0;
+  --accent-color: #FFCC70;
+  --base-padding: 4rem; /* Using CSS variable for padding */
+  --base-radius: 1rem;
+}
+
 .landing-hero {
-  background: linear-gradient(135deg, #4158D0 0%, #C850C0 46.35%, #FFCC70 100%);
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 46.35%, var(--accent-color) 100%);
   min-height: 80vh;
-  padding: 4rem 0;
+  padding: var(--base-padding) 0; /* Use CSS variable */
   position: relative;
   overflow: hidden;
 }
@@ -13,7 +23,11 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: url('/path-to-your-pattern.svg');
+  /* Update with actual path.  Options below: */
+  /* Option 1: Relative path (if pattern.svg is in assets/images) */
+  background: url('../images/pattern.svg'); 
+  /* Option 2: Using import.meta.env.BASE_URL (if pattern.svg is in public) */
+  /* background: url("#{import.meta.env.BASE_URL}pattern.svg"); */
   opacity: 0.1;
   z-index: 1;
 }
@@ -33,9 +47,9 @@
   margin-bottom: 1.5rem;
   background: linear-gradient(to right, #fff, #f0f0f0);
   -webkit-text-fill-color: transparent;
-  -webkit-background-clip: text; /* Add this line */
-  background-clip: text; /* Add this line */
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2); /* Add a subtle text shadow */
+  -webkit-background-clip: text;
+  background-clip: text;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
   animation: fadeInUp 1s ease;
 }
 
@@ -43,8 +57,8 @@
   font-size: 1.25rem;
   margin-bottom: 2rem;
   line-height: 1.6;
-  color: rgba(255, 255, 255, 0.95); /* Slightly brighter text */
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3); /* Add a subtle text shadow */
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
   animation: fadeInUp 1s ease 0.2s backwards;
 }
 
@@ -64,7 +78,7 @@
 
 .cta-primary {
   background: white;
-  color: #4158D0;
+  color: var(--primary-color); /* Using CSS variable */
 }
 
 .cta-primary:hover {
@@ -83,7 +97,7 @@
 }
 
 .feature-section {
-  padding: 4rem 0;
+  padding: var(--base-padding) 0; /* Use CSS variable */
   background: white;
 }
 
@@ -96,7 +110,7 @@
 
 .feature-card {
   padding: 2rem;
-  border-radius: 1rem;
+  border-radius: var(--base-radius); /* Use CSS variable */
   background: white;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
@@ -122,6 +136,22 @@
 
   .landing-hero {
     min-height: 60vh;
-    padding: 2rem 0;
+    padding: 2rem 0; /* Responsive padding adjustment */
+  }
+
+  .feature-section {
+    padding: 2rem 0; /* Responsive padding adjustment */
+  }
+}
+
+/* Add fadeInUp keyframes (or import from another CSS file) */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

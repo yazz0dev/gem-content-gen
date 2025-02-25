@@ -1,18 +1,12 @@
 /* src/assets/css/responsive.css */
 
 /* Mobile First Approach */
-:root {
-  --mobile-padding: 1rem;
-  --tablet-padding: 1.5rem;
-  --desktop-padding: 2rem;
-    /* Consistency with main.css */
-    --border-radius-lg: 1rem; /* Default to lg */
-    --border-radius-md: 0.75rem;
-}
+
+
 
 /* Base Mobile Styles */
 .content-generation-section {
-  padding: var(--mobile-padding);
+  padding: 1rem; /* Use default padding from main.css */
   margin: 1rem;
 }
 
@@ -27,50 +21,47 @@
 /* Tablet Styles */
 @media (min-width: 768px) {
   .content-generation-section {
-    padding: var(--tablet-padding);
+    padding: 1.5rem; /* Use different padding value */
     margin: 1.5rem;
   }
 
   .step-label {
     font-size: 0.9rem;
   }
-    /* Override for tablet */
-    :root {
-        --border-radius-lg: 0.75rem;
-        --border-radius-md: 0.5rem;
-    }
+
+  .content-type-card, .model-card { /* Example of directly adjusting properties */
+    border-radius: 0.75rem; /* Instead of overriding --border-radius-lg */
+  }
 }
 
 /* Desktop Styles */
 @media (min-width: 1024px) {
   .content-generation-section {
-    padding: var(--desktop-padding);
+    padding: 2rem; /* Use different padding value */
     margin: 2rem auto;
     max-width: 1200px;
   }
-  
+
   .step-label {
     font-size: 1rem;
   }
-    /* Override for desktop - use values from main.css*/
-
+  .content-type-card, .model-card { /* Example of directly adjusting properties */
+    border-radius: 1rem; /* Instead of overriding --border-radius-lg */
+  }
 }
+
 
 /* Touch Device Optimizations */
 @media (hover: none) {
-  .model-card:hover,
-  .content-type-card:hover,
-  .template-option:hover {
+  .model-card,
+  .content-type-card,
+  .template-option,
+  .btn, /* Added .btn to ensure hover effects are disabled */
+  .auth-tab { /* Added .auth-tab */
     transform: none;
+    box-shadow: none; /* Remove hover shadow effects */
   }
 
-  .btn:hover {
-    transform: none !important;
-  }
-
-  .auth-tab:hover {
-    background: none;
-  }
 
   .btn:active {
     transform: scale(0.98);

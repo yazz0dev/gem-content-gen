@@ -3,12 +3,23 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { updateGenerationData } from "./firebaseUtils"; // Use the combined update function
 import { encode } from 'gpt-tokenizer'; // Import the tokenizer
 import { auth } from '@/firebase'; // Import Firebase auth
-
-const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
+import { getDeveloperApiKey } from './auth';
 
 async function generateContent(formData, selectedTemplate, selectedModel, contentType) {
+    let genAIInstance;
+    const user = auth.currentUser;
+    const developerApiKey = getDeveloperApiKey();
+
+    if (user) {
+        genAIInstance = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
+    } else if (developerApiKey) {
+        genAIInstance = new GoogleGenerativeAI(developerApiKey);
+    } else {
+        throw new Error("Please sign in or provide a developer API key.");
+    }
+
     const prompt = generatePrompt(formData, selectedTemplate, contentType);
-    const model = genAI.getGenerativeModel({ model: selectedModel });
+    const model = genAIInstance.getGenerativeModel({ model: selectedModel });
 
     try {
         const result = await model.generateContent(prompt);

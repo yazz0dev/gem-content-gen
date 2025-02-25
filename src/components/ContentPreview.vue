@@ -6,10 +6,16 @@ File: /src/components/ContentPreview.vue
 <template>
   <div class="content-preview">
     <div class="preview-actions mb-3">
-      <button @click="downloadPDF" class="btn btn-primary me-2">
+      <button @click="downloadPDF" 
+              class="btn btn-primary me-2"
+              :disabled="isGenerating"
+              aria-label="Download as PDF">
         <i class="bi bi-download me-2"></i>Download PDF
       </button>
-      <button @click="copyToClipboard" class="btn btn-secondary">
+      <button @click="copyToClipboard" 
+              class="btn btn-secondary"
+              :disabled="isGenerating"
+              aria-label="Copy HTML content">
         <i class="bi bi-clipboard me-2"></i>Copy HTML
       </button>
     </div>
@@ -43,9 +49,13 @@ export default {
     contentData: { // Receive form data
       type: Object,
       default: () => ({})
+    },
+    isGenerating: {
+      type: Boolean,
+      default: false
     }
   },
-  setup(props) {
+  setup(props, { emit }) {
     const previewContainer = ref(null);
 
     const templateClass = computed(() => {
@@ -109,10 +119,15 @@ export default {
         return DOMPurify.sanitize(tempDiv.innerHTML);
     });
 
-
+    const notify = (message, type = 'success') => {
+      // Emit notification event to parent
+      emit('notification', { message, type });
+    };
 
     const downloadPDF = async () => {
       const element = previewContainer.value;
+      if (!element) return;
+
       const opt = {
         margin: 1,
         filename: `${props.contentType}-${Date.now()}.pdf`,
@@ -123,16 +138,24 @@ export default {
 
       try {
         await html2pdf().set(opt).from(element).save();
+        notify('PDF downloaded successfully');
       } catch (error) {
         console.error('PDF generation failed:', error);
+        notify('Failed to generate PDF. Please try again.', 'error');
       }
     };
 
-    const copyToClipboard = () => {
-      const content = previewContainer.value.innerHTML;
-      navigator.clipboard.writeText(content)
-        .then(() => alert('Content copied to clipboard!'))
-        .catch(err => console.error('Failed to copy:', err));
+    const copyToClipboard = async () => {
+      const content = previewContainer.value?.innerHTML;
+      if (!content) return;
+
+      try {
+        await navigator.clipboard.writeText(content);
+        notify('Content copied to clipboard');
+      } catch (error) {
+        console.error('Copy failed:', error);
+        notify('Failed to copy content. Please try again.', 'error');
+      }
     };
 
     return {

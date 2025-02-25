@@ -9,28 +9,46 @@ import { setDoc, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 const auth = getAuth();
 
-const handleAuthError = (error) => {
-  console.error('Auth error:', error);
-
-  if (!navigator.onLine) {
-    throw new Error('No internet connection. Please check your network.');
-  }
-
-  if (error.code === 'auth/network-request-failed') {
-    throw new Error('Connection failed. Please try again.');
-  }
-
-  const errorMessages = {
-    'auth/user-not-found': 'No account found with this email.',
-    'auth/wrong-password': 'Invalid email or password.',
-    'auth/email-already-in-use': 'This email is already registered.',
-    'auth/weak-password': 'Password should be at least 6 characters.',
-    'auth/invalid-email': 'Please enter a valid email address.',
-    'auth/too-many-requests': 'Too many attempts. Please try again later.',
-  };
-
-  throw new Error(errorMessages[error.code] || error.message || 'Authentication failed. Please try again.');
+const errorMessages = {
+  'auth/email-already-in-use': 'This email is already registered.',
+  'auth/invalid-email': 'Invalid email address.',
+  'auth/operation-not-allowed': 'Operation not allowed.',
+  'auth/weak-password': 'Password is too weak.',
+  'auth/user-disabled': 'This account has been disabled.',
+  'auth/user-not-found': 'No account found with this email.',
+  'auth/wrong-password': 'Incorrect password.',
+  'auth/network-request-failed': 'Network error. Please check your connection.',
+  'default': 'An unexpected error occurred. Please try again.'
 };
+
+const handleAuthError = (error) => {
+  console.error('Auth Error:', error);
+  
+  if (!navigator.onLine) {
+    return 'No internet connection. Please check your network.';
+  }
+
+  return errorMessages[error.code] || errorMessages.default;
+};
+
+const API_KEY_SESSION_KEY = 'gemini_developer_api_key';
+
+function setDeveloperApiKey(apiKey) {
+  try {
+    sessionStorage.setItem(API_KEY_SESSION_KEY, apiKey);
+  } catch (error) {
+    console.error("Error setting API key in session storage:", error);
+    throw new Error("Unable to store API key. Please check your browser settings.");
+  }
+}
+
+function getDeveloperApiKey() {
+  return sessionStorage.getItem(API_KEY_SESSION_KEY);
+}
+
+function clearDeveloperApiKey() {
+  sessionStorage.removeItem(API_KEY_SESSION_KEY);
+}
 
 async function signup(email, password) {
   try {
@@ -60,6 +78,7 @@ async function login(email, password) {
 async function signOutUser() {
   try {
     await signOut(auth);
+    clearDeveloperApiKey();
   } catch (error) {
     throw handleAuthError(error);
   }
@@ -87,12 +106,12 @@ async function getUserRole(userId) {
 // Add connection status monitoring
 export const initializeAuthStatusMonitoring = () => {
   window.addEventListener('online', () => {
-    console.log('Connection restored');
+    auth.useEmulator('http://localhost:9099');
   });
 
   window.addEventListener('offline', () => {
-    console.log('Connection lost');
+    console.warn('Application is offline');
   });
 };
 
-export { signup, login, signOutUser, sendPasswordResetEmail, getUserRole };
+export { signup, login, signOutUser, sendPasswordResetEmail, getUserRole, setDeveloperApiKey, getDeveloperApiKey, clearDeveloperApiKey };

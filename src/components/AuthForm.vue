@@ -96,6 +96,24 @@
           <p v-if="resetSuccess" class="text-success text-center mt-3">{{ resetSuccess }}</p>
           <p v-if="resetApiError" class="error-message text-center mt-3">{{ resetApiError }}</p>
         </VForm>
+
+        <VForm v-show="activeTab === 'developer'" @submit="handleDeveloperLogin" class="auth-form">
+          <h2 class="auth-title">Developer Mode</h2>
+          <p class="text-muted">Enter your Gemini API key to use the app without an account.</p>
+          
+          <div class="form-floating mb-3">
+            <Field type="password" id="developer-api-key" name="apiKey" class="form-control" placeholder="API Key" />
+            <label for="developer-api-key">Gemini API Key</label>
+            <ErrorMessage name="apiKey" class="error-message" />
+          </div>
+
+          <button type="submit" class="btn-auth" :disabled="loading">
+            <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
+            Use API Key
+          </button>
+          
+          <p v-if="developerApiError" class="error-message text-center mt-3">{{ developerApiError }}</p>
+        </VForm>
       </div>
     </div>
   </div>
@@ -112,13 +130,15 @@ const activeTab = ref('login'); // Add this line to fix the warning
 const tabs = [
   { id: 'login', label: 'Sign In' },
   { id: 'signup', label: 'Sign Up' },
-  { id: 'reset', label: 'Reset Password' }
+  { id: 'reset', label: 'Reset Password' },
+  { id: 'developer', label: 'Developer' }
 ];
 const showPassword = ref(false);
 
 const loginApiError = ref(''); // Separate API error
 const signupApiError = ref('');
 const resetApiError = ref('');
+const developerApiError = ref('');
 const resetSuccess = ref('');
 const loading = ref(false);
 const router = useRouter();
@@ -135,6 +155,9 @@ const signupSchema = yup.object({
 });
 const resetSchema = yup.object({
   email: yup.string().required().email(),
+});
+const developerSchema = yup.object({
+  apiKey: yup.string().required('API Key is required'),
 });
 
 const handleLogin = async (values) => {
@@ -175,6 +198,23 @@ const handleResetPassword = async (values) => {
   } catch (error) {
     console.error("Reset Password Error:", error);
     resetApiError.value = error.message;
+  } finally {
+    loading.value = false;
+  }
+};
+
+const handleDeveloperLogin = async (values) => {
+  developerApiError.value = '';
+  loading.value = true;
+  try {
+    // Implement your developer login logic here
+    console.log("Developer API Key:", values.apiKey);
+    // For example, you can store the API key in local storage
+    localStorage.setItem('geminiApiKey', values.apiKey);
+    router.push('/');
+  } catch (error) {
+    console.error("Developer Login Error:", error);
+    developerApiError.value = error.message;
   } finally {
     loading.value = false;
   }

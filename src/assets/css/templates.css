@@ -1,0 +1,101 @@
+/* Base template styles */
+.template-base {
+  font-family: 'Inter', sans-serif;
+  line-height: 1.6;
+  color: var(--text-primary);
+  margin: 0 auto;
+  background: white;
+}
+
+/* Modern template */
+.template-modern {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.template-modern h1 {
+  font-size: 2.5rem;
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+}
+
+.template-modern .contact-info {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+}
+
+.template-modern .section {
+  margin-bottom: 2rem;
+}
+
+/* Classic template */
+.template-classic {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+  background: #fff;
+  border: 1px solid #ddd;
+}
+
+.template-classic h1 {
+  text-align: center;
+  font-size: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Minimalist template */
+.template-minimalist {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  background: white;
+}
+
+.template-minimalist h1 {
+  font-size: 1.8rem;
+  font-weight: 500;
+}
+
+/* Creative template */
+.template-creative {
+  max-width: 850px;
+  margin: 0 auto;
+  padding: 2rem;
+  background: linear-gradient(to right, #fff, #f8f9fa);
+}
+
+.template-creative h1 {
+  font-size: 2.2rem;
+  background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Common section styles */
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--primary-color);
+}
+
+.section-content {
+  margin-bottom: 2rem;
+}
+
+/* Print styles */
+@media print {
+  .template-modern,
+  .template-classic,
+  .template-minimalist,
+  .template-creative {
+    padding: 0;
+    margin: 0;
+    max-width: none;
+    background: white !important;
+    color: black !important;
+  }
+}

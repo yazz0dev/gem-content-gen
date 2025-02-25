@@ -39,12 +39,10 @@
       <RouterView />
     </div>
 
-    <!-- Global Error Display  -->
-    <div v-if="globalError" class="alert alert-danger global-error">
-      {{ globalError }}
-    </div>
-    <div v-if="authLoading" class="d-flex justify-content-center align-items-center" style="height: 100vh;">
-      <p>Loading...</p>
+    <NotificationToast />
+    
+    <div v-if="authLoading" class="loading-overlay">
+      <LoadingSpinner />
     </div>
   </div>
 </template>
@@ -55,24 +53,31 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/firebase';
 import { signOutUser } from '@/utils/auth';
 import { ref, onMounted, getCurrentInstance } from 'vue';
+import { createNotificationSystem, useNotification } from '@/store/notificationStore';
+import NotificationToast from '@/components/NotificationToast.vue';
+import LoadingSpinner from '@/components/LoadingSpinner.vue';
 
 export default {
   name: 'App',
   components: {
     RouterView,
-    RouterLink
+    RouterLink,
+    NotificationToast,
+    LoadingSpinner
   },
   setup() {
+    // Initialize notification system first
+    createNotificationSystem();
+    // Then use it
+    const { showNotification } = useNotification();
     const router = useRouter();
     const user = ref(null);
     const authLoading = ref(true);
-    const globalError = ref('');
 
     const app = getCurrentInstance();
-
     app.appContext.config.errorHandler = (err, vm, info) => {
       console.error("Global Error:", err, info);
-      globalError.value = "An unexpected error occurred. Please try again later.";
+      showNotification("An unexpected error occurred. Please try again later.", "error");
     };
 
     onMounted(() => {
@@ -86,13 +91,14 @@ export default {
       try {
         await signOutUser();
         router.push('/');
+        showNotification("Successfully signed out", "success");
       } catch (error) {
         console.error("Sign out error:", error);
-        globalError.value = "Failed to sign out. Please try again.";
+        showNotification("Failed to sign out. Please try again.", "error");
       }
     };
 
-    return { user, authLoading, handleSignOut, globalError };
+    return { user, authLoading, handleSignOut };
   }
 };
 </script>

@@ -100,8 +100,8 @@ File: /src/views/GenerationView.vue
                  </button>
                </div>
                      <!-- Display Generation Error Here -->
-                     <div v-if="generationError" class="alert alert-danger" role="alert">
-                         {{ generationError }}
+                     <div v-if="generationError || apiKeyError" class="alert alert-danger" role="alert">
+                         {{ generationError || apiKeyError }}
                      </div>
                    <ContentForm
                      :contentType="selectedContentType"
@@ -183,6 +183,7 @@ File: /src/views/GenerationView.vue
      const isGenerating = ref(false);
      const showRating = ref(false);
      const generationError = ref('');
+     const apiKeyError = ref('');
 
     const contentTypes = [
       {
@@ -422,10 +423,38 @@ File: /src/views/GenerationView.vue
        return type ? type.name : '';
      });
 
+     const SESSION_STORAGE_KEY = 'generation_data';
+
      onMounted(() => {
-       // Add any initialization logic here
+       const savedData = sessionStorage.getItem(SESSION_STORAGE_KEY);
+       if (savedData) {
+         const data = JSON.parse(savedData);
+         currentStep.value = data.currentStep || 1;
+         selectedTemplate.value = data.selectedTemplate || '';
+         selectedModel.value = data.selectedModel || '';
+         selectedContentType.value = data.selectedContentType || '';
+         formInputs.value = data.formInputs || {};
+       }
+     
+       auth.onAuthStateChanged(currentUser => {
+         user.value = currentUser;
+         if (!currentUser) {
+           sessionStorage.removeItem(SESSION_STORAGE_KEY);
+         }
+       });
      });
- 
+     
+     watch([currentStep, selectedTemplate, selectedModel, selectedContentType, formInputs], () => {
+       const dataToSave = {
+         currentStep: currentStep.value,
+         selectedTemplate: selectedTemplate.value,
+         selectedModel: selectedModel.value,
+         selectedContentType: selectedContentType.value,
+         formInputs: formInputs.value,
+       };
+       sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(dataToSave));
+     }, { deep: true });
+
      return {
        user,
        currentStep,
@@ -448,7 +477,8 @@ File: /src/views/GenerationView.vue
        handleRatingClosed,
        generationError,
        handleBackFromGenerate,
-       formattedContentType
+       formattedContentType,
+       apiKeyError
      };
    }
  };
