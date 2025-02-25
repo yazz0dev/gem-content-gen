@@ -77,7 +77,7 @@
 
 <script>
 import { ref, onMounted, onUnmounted } from 'vue';
-import { auth } from '@/firebase';
+import { auth } from '@/api/firebase.js';
 import { useRouter } from 'vue-router';
 
 export default {

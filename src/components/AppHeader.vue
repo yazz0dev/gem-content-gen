@@ -36,10 +36,10 @@
   
   <script>
   import { RouterLink } from 'vue-router';
-  import { auth } from '@/firebase';
+  import { auth } from '@/api/firebase';
   import { signOutUser } from '@/utils/auth';
   import { ref, onMounted } from 'vue';
-  import { useNotifications } from '@/composables/useNotifications'; // Import useNotifications
+  import { useNotifications } from '@/composables/useNotification'; // Import useNotifications
   
   export default {
     name: 'AppHeader',

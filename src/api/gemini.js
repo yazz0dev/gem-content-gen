@@ -1,10 +1,8 @@
 // src/api/gemini.js
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 import { getDeveloperApiKey } from '@/utils/auth';
-import { auth } from '@/firebase';
+import { auth } from '@/api/firebase';
 import DOMPurify from 'dompurify';
-import axios from 'axios';
-import axiosRetry from 'axios-retry';
 import pLimit from 'p-limit';
 
 const getGenAI = () => {

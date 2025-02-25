@@ -79,8 +79,7 @@
 
 <script>
 import { ref, reactive } from 'vue';
-import { submitModelRating } from '@/api/firebaseUtils';
-import { auth } from '@/firebase';
+import { submitModelRating } from '@/composables/useFirebase';
 
 export default {
   name: 'RatingComponent',

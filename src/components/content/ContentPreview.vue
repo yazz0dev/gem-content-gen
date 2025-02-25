@@ -18,7 +18,7 @@
   <script>
   import { ref, computed } from 'vue';
   import DOMPurify from 'dompurify';
-  import DownloadOptions from './content/DownloadOptions.vue'; // Import
+  import DownloadOptions from '../content/DownloadOptions.vue'; // Import
   
   export default {
   name: 'ContentPreview',

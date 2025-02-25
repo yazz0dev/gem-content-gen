@@ -1,7 +1,6 @@
 // src/utils/generation.js
-import { updateGenerationData } from "./firebaseUtils"; // No change needed here, relative import is correct
 import { encode } from 'gpt-tokenizer';
-import { auth } from '@/firebase';
+import { auth } from '@/api/firebase';
 import { generateContentWithGemini } from '@/api/gemini'; // Import from the new location
 import { useFirebase } from "@/composables/useFirebase"; // Import the composable
 

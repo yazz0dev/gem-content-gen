@@ -1,11 +1,10 @@
 // src/composables/useFirebase.js (Reusable Firebase logic)
 
-import { db } from '@/firebase';
+import { db } from '@/api/firebase.js';
 import { doc, getDoc, setDoc, updateDoc, collection, getDocs, increment, serverTimestamp, runTransaction } from 'firebase/firestore';
 import { MODEL_LIMITS } from '@/utils/constants';
 import { getUserRole } from '@/utils/auth';
-import { ref, onUnmounted } from 'vue';
-
+import { Timestamp } from 'firebase/firestore';
 
 export function useFirebase() {
 
@@ -143,52 +142,68 @@ export function useFirebase() {
     };
 
     const fetchLeaderboardData = async () => {
+        try {
+            // Get current time for rate calculations
+            const now = Timestamp.now();
+            const oneMinuteAgo = new Timestamp(now.seconds - 60, now.nanoseconds);
+            const oneDayAgo = new Timestamp(now.seconds - 86400, now.nanoseconds);
 
-          try {
-        const leaderboardData = [];
-        const querySnapshot = await getDocs(collection(db, 'modelRateLimits'));
+            // Fetch model usage data
+            const usageRef = collection(db, 'modelUsage');
+            const querySnapshot = await getDocs(usageRef);
+            
+            // Process the data
+            const modelStats = {};
+            
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                const modelId = data.modelId;
+                
+                if (!modelStats[modelId]) {
+                    modelStats[modelId] = {
+                        id: modelId,
+                        averageRating: 0,
+                        count: 0,
+                        totalRating: 0,
+                        rpm: 0,  // requests per minute
+                        tpm: 0,  // tokens per minute
+                        rpd: 0,  // requests per day
+                        isAvailable: true
+                    };
+                }
+                
+                // Calculate metrics
+                if (data.timestamp) {
+                    if (data.timestamp.toMillis() > oneMinuteAgo.toMillis()) {
+                        modelStats[modelId].rpm++;
+                        modelStats[modelId].tpm += (data.tokens || 0);
+                    }
+                    if (data.timestamp.toMillis() > oneDayAgo.toMillis()) {
+                        modelStats[modelId].rpd++;
+                    }
+                }
+                
+                // Process ratings
+                if (data.rating) {
+                    modelStats[modelId].totalRating += data.rating;
+                    modelStats[modelId].count++;
+                }
+            });
 
-        for (const docSnapshot of querySnapshot.docs) {
-            const modelId = docSnapshot.id;
+            // Calculate averages and format data
+            return Object.values(modelStats).map(model => ({
+                ...model,
+                averageRating: model.count > 0 ? model.totalRating / model.count : 0,
+                // Round values for display
+                rpm: Math.round(model.rpm),
+                tpm: Math.round(model.tpm),
+                rpd: Math.round(model.rpd)
+            }));
 
-            // Only include specific models in the leaderboard
-            if (['gemini-2.0-pro-exp-02-05', 'gemini-2.0-flash-thinking-exp-01-21', 'gemini-2.0-flash', 'gemini-2.0-flash-lite-preview-02-05'].includes(modelId)) {
-                const data = docSnapshot.data();
-                const {
-                    contentAccuracy = 0,
-                    formatting = 0,
-                    overallQuality = 0,
-                    count = 0,
-                    rpm = 0, // Get rpm directly
-                    tpm = 0, // and tpm
-                    rpd = 0, // and rpd.
-                } = data;
-
-                const totalScore = contentAccuracy + formatting + overallQuality;
-                const averageRating = count > 0 ? (totalScore / (count * 3)) * 5 : 0;
-
-                // Determine availability based on rate limits
-                const modelLimits = MODEL_LIMITS[modelId] || {};
-                const isModelAvailable = !((rpm >= modelLimits.rpm) || (tpm >= modelLimits.tpm) || (rpd >= modelLimits.rpd));
-
-                leaderboardData.push({
-                    id: modelId,
-                    averageRating,
-                    count,
-                    rpm: rpm,
-                    tpm: tpm,
-                    rpd: rpd,
-                    isAvailable: isModelAvailable,
-                });
-            }
+        } catch (error) {
+            console.error('Error fetching leaderboard data:', error);
+            throw new Error('Failed to fetch leaderboard data');
         }
-
-        leaderboardData.sort((a, b) => b.averageRating - a.averageRating);
-        return leaderboardData;
-    } catch (error) {
-        console.error("Error fetching leaderboard data:", error);
-        throw new Error(`Failed to load leaderboard data: ${error.message}`);
-    }
     };
 
    const checkModelRateLimit = async (modelName, userId) => {
@@ -231,3 +246,4 @@ export function useFirebase() {
 
   return { canGenerateResume, updateGenerationData, submitModelRating, fetchLeaderboardData, checkModelRateLimit };
 }
+

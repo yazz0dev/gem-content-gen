@@ -46,7 +46,7 @@
 import { useRouter } from 'vue-router';
 import { onMounted } from 'vue';
 import { initializeAuthStatusMonitoring } from '@/utils/auth';
-import { auth } from '@/firebase';
+import { auth } from '@/api/firebase.js';
 
 export default {
   name: 'LoggedOutHomeView',

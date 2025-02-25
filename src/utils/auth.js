@@ -7,7 +7,7 @@ import {
   getAuth
 } from 'firebase/auth';
 import { setDoc, doc, getDoc } from 'firebase/firestore';
-import { db } from '@/firebase';
+import { db } from '@/api/firebase.js';
 const auth = getAuth();
 
 const errorMessages = {

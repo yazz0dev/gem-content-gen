@@ -173,7 +173,7 @@ import RatingComponent from '@/components/ui/RatingComponent.vue';
 import ContentForm from '@/components/content/ContentForm.vue';
 import ModelSelector from '@/components/ui/ModelSelector.vue';
 import ContentEditor from '@/components/content/ContentEditor.vue'; // Import
-import { auth } from '@/firebase';
+import { auth } from '@/api/firebase.js';
 import { canGenerateResume } from '@/composables/useFirebase'; //Corrected import
 import { generateContent } from '@/utils/generation';
 import { getUserRole } from '@/utils/auth';

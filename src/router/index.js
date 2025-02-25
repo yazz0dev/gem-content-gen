@@ -4,7 +4,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import AuthForm from '@/components/auth/AuthForm.vue';
 import LeaderboardComponent from '@/components/ui/LeaderboardComponent.vue';
-import { auth } from '@/firebase';
+import { auth } from '@/api/firebase.js';
 import LoggedOutHomeView from '../views/LoggedOutHomeView.vue'; // Import new view
 import GenerationView from '../views/GenerationView.vue'; // Import renamed view
 

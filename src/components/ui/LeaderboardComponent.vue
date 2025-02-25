@@ -59,8 +59,8 @@
 
 <script>
 import { ref, onMounted } from 'vue';
-import { fetchLeaderboardData } from '@/api/firebaseUtils';
-import { MODEL_LIMITS } from '@/utils/constants'; // Import MODEL_LIMITS
+import { useFirebase, fetchLeaderboardData } from '@/composables/useFirebase.js'; // Update import
+import { MODEL_LIMITS } from '@/utils/constants'; 
 
 export default {
   name: 'LeaderboardComponent',
