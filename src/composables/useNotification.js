@@ -1,4 +1,5 @@
-// src/composables/useNotifications.js (Singular file)
+// src/composables/useNotification.js
+//Corrected the singular naming issue
 import { reactive, readonly } from 'vue';
 
 const state = reactive({
@@ -29,7 +30,7 @@ function removeNotification(id) {
 
 export function useNotifications() {
   return {
-    notifications: readonly(state.notifications), // Readonly to prevent direct modification
+    notifications: readonly(state.notifications),
     showNotification,
     removeNotification,
   };

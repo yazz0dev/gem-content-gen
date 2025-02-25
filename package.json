@@ -14,8 +14,6 @@
   "dependencies": {
     "@dqbd/tiktoken": "^1.0.20",
     "@google/generative-ai": "^0.21.0",
-    "axios": "^1.7.9",
-    "axios-retry": "^4.5.0",
     "bootstrap": "^5.3.3",
     "bootstrap-icons": "^1.11.3",
     "dompurify": "^3.2.4",

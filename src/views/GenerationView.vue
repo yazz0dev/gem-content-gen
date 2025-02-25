@@ -1,6 +1,5 @@
----
-File: /src/views/GenerationView.vue
----
+// src/views/GenerationView.vue
+
 <template>
   <div class="page-container">
      <!-- Main Content Section -->
@@ -126,7 +125,7 @@ File: /src/views/GenerationView.vue
                       <ContentEditor v-if="isEditing"
                         v-model:contentHtml="editedContent"
                         :contentType="selectedContentType"
-                        @notification="$emit('notification', $event)"
+                        @notification="handleNotification"
                       />
                        <!-- Use ContentPreview when not editing -->
                       <ContentPreview v-else
@@ -134,7 +133,8 @@ File: /src/views/GenerationView.vue
                        :contentType="selectedContentType"
                        :template="selectedTemplate"
                        :contentData="formInputs"
-                       @notification="$emit('notification', $event)"
+                       :isGenerating="isGenerating"
+                       @notification="handleNotification"
                      />
                    </div>
                    <div v-else class="preview-placeholder">
@@ -171,348 +171,367 @@ import ContentPreview from '@/components/content/ContentPreview.vue';
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
 import RatingComponent from '@/components/ui/RatingComponent.vue';
 import ContentForm from '@/components/content/ContentForm.vue';
-import ModelSelector from '@/components/ModelSelector.vue';
+import ModelSelector from '@/components/ui/ModelSelector.vue';
 import ContentEditor from '@/components/content/ContentEditor.vue'; // Import
 import { auth } from '@/firebase';
-import { canGenerateResume,  } from '@/composables/useFirebase';
+import { canGenerateResume } from '@/composables/useFirebase'; //Corrected import
 import { generateContent } from '@/utils/generation';
 import { getUserRole } from '@/utils/auth';
-
+import { useDebounce } from '@/composables/useDebounce'; // Import
+import { useNotifications } from '@/composables/useNotification'; // Import
 
 export default {
-  name: 'GenerationView',
-  components: {
-    TemplateSelector,
-    ContentPreview,
-    LoadingSpinner,
-    RatingComponent,
-    ContentForm,
-    ModelSelector,
-    ContentEditor, // Add ContentEditor
-  },
-  setup() {
-    const user = ref(auth.currentUser);
-    const currentStep = ref(1);
-    const selectedTemplate = ref('');
-    const selectedModel = ref('');
-    const selectedContentType = ref('');
-    const formInputs = ref({});
-    const generatedContent = ref('');
-    const isGenerating = ref(false);
-    const showRating = ref(false);
-    const generationError = ref('');
-    const apiKeyError = ref('');
-    const isEditing = ref(false);  // Track editing state
-    const editedContent = ref('');     // Store edited content
+    name: 'GenerationView',
+    components: {
+        TemplateSelector,
+        ContentPreview,
+        LoadingSpinner,
+        RatingComponent,
+        ContentForm,
+        ModelSelector,
+        ContentEditor, // Add ContentEditor
+    },
+    setup() {
+        const user = ref(auth.currentUser);
+        const currentStep = ref(1);
+        const selectedTemplate = ref('');
+        const selectedModel = ref('');
+        const selectedContentType = ref('');
+        const formInputs = ref({});
+        const generatedContent = ref('');
+        const isGenerating = ref(false);
+        const showRating = ref(false);
+        const generationError = ref('');
+        const apiKeyError = ref('');
+        const isEditing = ref(false);  // Track editing state
+        const editedContent = ref('');     // Store edited content
 
-   const contentTypes = [
-      {
-        id: 'resume',
-        name: 'Resume',
-        icon: 'bi bi-file-person',
-        description: 'Professional resume with customizable sections',
-      },
-      {
-        id: 'social-post',
-        name: 'Social Media Post',
-        icon: 'bi bi-instagram',
-        description: 'Engaging social media content for any platform',
-      },
-      {
-        id: 'poster',
-        name: 'Poster',
-        icon: 'bi bi-image',
-        description: 'Eye-catching posters for events and promotions',
-      },
-      {
-        id: 'email-marketing',
-        name: 'Email Marketing',
-        icon: 'bi bi-envelope',
-        description: 'Create effective email marketing content.',
-      },
-      {
-        id: 'product-descriptions',
-        name: 'Product Descriptions',
-        icon: 'bi bi-box',
-        description: 'Craft compelling descriptions for your products.',
-      },
-      {
-        id: 'social-ad-copy',
-        name: 'Social Media Ad Copy',
-        icon: 'bi bi-badge-ad',
-        description: 'Write short, persuasive text for your social media ads.',
-      },
-      {
-        id: 'business-proposals',
-        name: 'Business Proposals',
-        icon: 'bi bi-briefcase',
-        description: 'Create detailed and professional business proposals.',
-      },
-      {
-        id: 'website-copy',
-        name: 'Website Copy',
-        icon: 'bi bi-globe',
-        description: 'Generate compelling content for various website pages.',
-      },
-      {
-        id: 'press-releases',
-        name: 'Press Releases',
-        icon: 'bi bi-newspaper',
-        description: 'Craft formal press releases for news and announcements.',
-      },
-    ];
+        const { showNotification } = useNotifications(); // Use the composable
 
-    const availableModels = [
-      {
-        id: 'gemini-2.0-pro-exp-02-05',
-        name: 'Gemini 2.0 Pro',
-        description: 'Most advanced model with highest quality output',
-        icon: 'bi bi-stars',
-        rating: 4.9,
-        speed: 'Slower',
-        quality: 'Very High'
-      },
-      {
-        id: 'gemini-2.0-flash-thinking-exp-01-21',
-        name: 'Gemini 2.0 Flash Thinking',
-        description: 'Balanced performance with high quality results',
-        icon: 'bi bi-lightning-charge',
-        rating: 4.7,
-        speed: 'Moderate',
-        quality: 'High'
-      },
-      {
-        id: 'gemini-2.0-flash',
-        name: 'Gemini 2.0 Flash',
-        description: 'Fast generation with good quality',
-        icon: 'bi bi-lightning',
-        rating: 4.5,
-        speed: 'Fast',
-        quality: 'Moderate'
-      },
-      {
-        id: 'gemini-2.0-flash-lite-preview-02-05',
-        name: 'Gemini 2.0 Flash-Lite',
-        description: 'Fastest generation for simpler tasks',
-        icon: 'bi bi-lightning-fill',
-        rating: 4.3,
-        speed: 'Fast',
-        quality: 'Moderate'
-      }
-    ];
+        const debouncedEditedContent = useDebounce(editedContent, 500);
 
-    //Initialize and reset formInputs, and selectedContentType
-    watch(() => selectedContentType.value, (newContentType) => {
-      if (newContentType) {
-        const selectedType = contentTypes.find(type => type.id === newContentType);
-        formInputs.value = {}; // Clear previous form data when content type changes.
-        // Initialize enhance flags
-        const fieldsForType = selectedType ? computed(() => {
-          switch (selectedType.id) {
-            case 'resume':
-              return [
-                { key: 'summary', enhanceable: true },
-                { key: 'workExperience', enhanceable: true },
-                { key: 'education', enhanceable: true },
-                { key: 'skills', enhanceable: true },
-              ];
-            case 'poster':
-               return [
-                 { key: 'body', enhanceable: true },
-               ]
-            case 'social-post':
-               return [
-                 {key: 'content', enhanceable: true}
-               ]
-            case 'email-marketing':
-                return [
-                    {key: 'body', enhanceable: true}
-                ]
-            case 'product-descriptions':
-                return [
-                   {key: 'benefits', enhanceable: true}
-                ]
-            case 'business-proposals':
-                return [
-                   { key: 'projectOverview', enhanceable: true },
-                   { key: 'objectives', enhanceable: true },
-                   { key: 'scopeOfWork', enhanceable: true },
-                ]
-            case 'website-copy':
-                return [
-                  { key: 'keyMessage', enhanceable: true },
-                ]
-             case 'press-releases':
-               return [
-                 { key: 'body', enhanceable: true },
-               ]
-            default:
-              return [];
-          }
-        }).value : [];
-
-        fieldsForType.forEach(field => {
-          if (field.enhanceable) {
-            formInputs.value[`${field.key}Enhance`] = false;
-          }
+         // Watch for changes in the *debounced* value and update generatedContent.
+        watch(debouncedEditedContent, (newVal) => {
+            if (isEditing.value) {
+                generatedContent.value = newVal;
+            }
         });
 
-      }
-    }, { immediate: true });
+        const contentTypes = [
+            {
+                id: 'resume',
+                name: 'Resume',
+                icon: 'bi bi-file-person',
+                description: 'Professional resume with customizable sections',
+            },
+            {
+                id: 'social-post',
+                name: 'Social Media Post',
+                icon: 'bi bi-instagram',
+                description: 'Engaging social media content for any platform',
+            },
+            {
+                id: 'poster',
+                name: 'Poster',
+                icon: 'bi bi-image',
+                description: 'Eye-catching posters for events and promotions',
+            },
+            {
+                id: 'email-marketing',
+                name: 'Email Marketing',
+                icon: 'bi bi-envelope',
+                description: 'Create effective email marketing content.',
+            },
+            {
+                id: 'product-descriptions',
+                name: 'Product Descriptions',
+                icon: 'bi bi-box',
+                description: 'Craft compelling descriptions for your products.',
+            },
+            {
+                id: 'social-ad-copy',
+                name: 'Social Media Ad Copy',
+                icon: 'bi bi-badge-ad',
+                description: 'Write short, persuasive text for your social media ads.',
+            },
+            {
+                id: 'business-proposals',
+                name: 'Business Proposals',
+                icon: 'bi bi-briefcase',
+                description: 'Create detailed and professional business proposals.',
+            },
+            {
+                id: 'website-copy',
+                name: 'Website Copy',
+                icon: 'bi bi-globe',
+                description: 'Generate compelling content for various website pages.',
+            },
+            {
+                id: 'press-releases',
+                name: 'Press Releases',
+                icon: 'bi bi-newspaper',
+                description: 'Craft formal press releases for news and announcements.',
+            },
+        ];
 
-    const handleTemplateSelection = (template) => {
-      selectedTemplate.value = template;
-    };
+        const availableModels = [
+            {
+                id: 'gemini-2.0-pro-exp-02-05',
+                name: 'Gemini 2.0 Pro',
+                description: 'Most advanced model with highest quality output',
+                icon: 'bi bi-stars',
+                rating: 4.9,
+                speed: 'Slower',
+                quality: 'Very High'
+            },
+            {
+                id: 'gemini-2.0-flash-thinking-exp-01-21',
+                name: 'Gemini 2.0 Flash Thinking',
+                description: 'Balanced performance with high quality results',
+                icon: 'bi bi-lightning-charge',
+                rating: 4.7,
+                speed: 'Moderate',
+                quality: 'High'
+            },
+            {
+                id: 'gemini-2.0-flash',
+                name: 'Gemini 2.0 Flash',
+                description: 'Fast generation with good quality',
+                icon: 'bi bi-lightning',
+                rating: 4.5,
+                speed: 'Fast',
+                quality: 'Moderate'
+            },
+            {
+                id: 'gemini-2.0-flash-lite-preview-02-05',
+                name: 'Gemini 2.0 Flash-Lite',
+                description: 'Fastest generation for simpler tasks',
+                icon: 'bi bi-lightning-fill',
+                rating: 4.3,
+                speed: 'Fast',
+                quality: 'Moderate'
+            }
+        ];
 
-    const selectModel = (modelId) => {
-      selectedModel.value = modelId;
-    };
+        //Initialize and reset formInputs, and selectedContentType
+        watch(() => selectedContentType.value, (newContentType) => {
+            if (newContentType) {
+                const selectedType = contentTypes.find(type => type.id === newContentType);
+                formInputs.value = {}; // Clear previous form data when content type changes.
+                // Initialize enhance flags
+                const fieldsForType = selectedType ? computed(() => {
+                    switch (selectedType.id) {
+                        case 'resume':
+                            return [
+                                { key: 'summary', enhanceable: true },
+                                { key: 'workExperience', enhanceable: true },
+                                { key: 'education', enhanceable: true },
+                                { key: 'skills', enhanceable: true },
+                            ];
+                        case 'poster':
+                            return [
+                                { key: 'body', enhanceable: true },
+                            ]
+                        case 'social-post':
+                            return [
+                                { key: 'content', enhanceable: true }
+                            ]
+                        case 'email-marketing':
+                            return [
+                                { key: 'body', enhanceable: true }
+                            ]
+                        case 'product-descriptions':
+                            return [
+                                { key: 'benefits', enhanceable: true }
+                            ]
+                        case 'business-proposals':
+                            return [
+                                { key: 'projectOverview', enhanceable: true },
+                                { key: 'objectives', enhanceable: true },
+                                { key: 'scopeOfWork', enhanceable: true },
+                            ]
+                        case 'website-copy':
+                            return [
+                                { key: 'keyMessage', enhanceable: true },
+                            ]
+                        case 'press-releases':
+                            return [
+                                { key: 'body', enhanceable: true },
+                            ]
+                        default:
+                            return [];
+                    }
+                }).value : [];
 
-    const selectContentType = (typeId) => {
-      selectedContentType.value = typeId;
-       // No need to reset currentStep here, it's handled in nextStep()
-    };
+                fieldsForType.forEach(field => {
+                    if (field.enhanceable) {
+                        formInputs.value[`${field.key}Enhance`] = false;
+                    }
+                });
 
-    const nextStep = () => {
-       if (currentStep.value === 1 && !selectedContentType.value) {
-            return; // Prevent moving to step 2 without selecting a content type
-        }
-      if (currentStep.value < 4) {
-        currentStep.value++;
-      }
-    };
+            }
+        }, { immediate: true });
 
-    const previousStep = () => {
-      if (currentStep.value > 1) {
-        currentStep.value--;
-      }
-    };
+        const handleTemplateSelection = (template) => {
+            selectedTemplate.value = template;
+        };
 
-    const handleBackFromGenerate = () => {
-      generationError.value = ''; // Clear any generation errors
-      generatedContent.value = ''; // Clear generated content
-      isEditing.value = false;
-      previousStep();
-    };
+        const selectModel = (modelId) => {
+            selectedModel.value = modelId;
+        };
 
-   const handleGenerateContent = async (formData) => {
-        generationError.value = '';
-        isGenerating.value = true;
-        const userId = auth.currentUser?.uid;
-        formInputs.value = formData.formData; //Store for content preview
+        const selectContentType = (typeId) => {
+            selectedContentType.value = typeId;
+            // No need to reset currentStep here, it's handled in nextStep()
+        };
 
-        try {
-            if (!userId) throw new Error('User not authenticated');
+        const nextStep = () => {
+            if (currentStep.value === 1 && !selectedContentType.value) {
+                return; // Prevent moving to step 2 without selecting a content type
+            }
+            if (currentStep.value < 4) {
+                currentStep.value++;
+            }
+        };
 
-            // Use role-based check
-            const userRole = await getUserRole(userId);
-            if (userRole !== 'admin' && !(await canGenerateResume(userId))) {
-                throw new Error('Daily generation limit reached or insufficient credits.');
+        const previousStep = () => {
+            if (currentStep.value > 1) {
+                currentStep.value--;
+            }
+        };
+
+        const handleBackFromGenerate = () => {
+            generationError.value = ''; // Clear any generation errors
+            generatedContent.value = ''; // Clear generated content
+            isEditing.value = false;
+            previousStep();
+        };
+
+        const handleGenerateContent = async (formData) => {
+            generationError.value = '';
+            isGenerating.value = true;
+            const userId = auth.currentUser?.uid;
+            formInputs.value = formData.formData; //Store for content preview
+
+            try {
+                if (!userId) throw new Error('User not authenticated');
+
+                // Use role-based check
+                const userRole = await getUserRole(userId);
+                if (userRole !== 'admin' && !(await canGenerateResume(userId))) {
+                    throw new Error('Daily generation limit reached or insufficient credits.');
+                }
+
+                const result = await generateContent(
+                    formData.formData,
+                    selectedTemplate.value,
+                    selectedModel.value,
+                    selectedContentType.value
+                );
+
+                generatedContent.value = result.html; // Initial generated content
+                editedContent.value = result.html;  // Initialize editedContent
+                showRating.value = true;
+                isEditing.value = false; // Ensure editor is not shown initially
+
+            } catch (error) {
+                generationError.value = error.message;
+            } finally {
+                isGenerating.value = false;
+            }
+        };
+
+        const handleRatingSubmitted = () => {
+            showRating.value = false;
+            // Optional: Add success message or additional actions
+        };
+
+        const handleRatingClosed = () => {
+            showRating.value = false;
+        };
+
+        const formattedContentType = computed(() => {
+            const type = contentTypes.find(t => t.id === selectedContentType.value);
+            return type ? type.name : '';
+        });
+
+        // Choose what to display in the preview
+        const displayContent = computed(() => {
+            return isEditing.value ? editedContent.value : generatedContent.value;
+        });
+
+        // Centralized notification handler
+        const handleNotification = (notification) => {
+          showNotification(notification.message, notification.type);
+        };
+
+        const SESSION_STORAGE_KEY = 'generation_data';
+
+        onMounted(() => {
+            const savedData = sessionStorage.getItem(SESSION_STORAGE_KEY);
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                currentStep.value = data.currentStep || 1;
+                selectedTemplate.value = data.selectedTemplate || '';
+                selectedModel.value = data.selectedModel || '';
+                selectedContentType.value = data.selectedContentType || '';
+                formInputs.value = data.formInputs || {};
             }
 
-            const result = await generateContent(
-                formData.formData,
-                selectedTemplate.value,
-                selectedModel.value,
-                selectedContentType.value
-            );
+            auth.onAuthStateChanged(currentUser => {
+                user.value = currentUser;
+                if (!currentUser) {
+                    sessionStorage.removeItem(SESSION_STORAGE_KEY);
+                }
+            });
+        });
 
-            generatedContent.value = result.html; // Initial generated content
-            editedContent.value = result.html;  // Initialize editedContent
-            showRating.value = true;
-            isEditing.value = false; // Ensure editor is not shown initially
+        watch([currentStep, selectedTemplate, selectedModel, selectedContentType, formInputs], () => {
+            const dataToSave = {
+                currentStep: currentStep.value,
+                selectedTemplate: selectedTemplate.value,
+                selectedModel: selectedModel.value,
+                selectedContentType: selectedContentType.value,
+                formInputs: formInputs.value,
+            };
+            sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(dataToSave));
+        }, { deep: true });
 
-        } catch (error) {
-            generationError.value = error.message;
-        } finally {
-            isGenerating.value = false;
-        }
-    };
-
-    const handleRatingSubmitted = () => {
-      showRating.value = false;
-      // Optional: Add success message or additional actions
-    };
-
-    const handleRatingClosed = () => {
-      showRating.value = false;
-    };
-
-    const formattedContentType = computed(() => {
-      const type = contentTypes.find(t => t.id === selectedContentType.value);
-      return type ? type.name : '';
-    });
-
-     // Choose what to display in the preview
-    const displayContent = computed(() => {
-      return isEditing.value ? editedContent.value : generatedContent.value;
-    });
-
-    const SESSION_STORAGE_KEY = 'generation_data';
-
-    onMounted(() => {
-      const savedData = sessionStorage.getItem(SESSION_STORAGE_KEY);
-      if (savedData) {
-        const data = JSON.parse(savedData);
-        currentStep.value = data.currentStep || 1;
-        selectedTemplate.value = data.selectedTemplate || '';
-        selectedModel.value = data.selectedModel || '';
-        selectedContentType.value = data.selectedContentType || '';
-        formInputs.value = data.formInputs || {};
-      }
-    
-      auth.onAuthStateChanged(currentUser => {
-        user.value = currentUser;
-        if (!currentUser) {
-          sessionStorage.removeItem(SESSION_STORAGE_KEY);
-        }
-      });
-    });
-    
-    watch([currentStep, selectedTemplate, selectedModel, selectedContentType, formInputs], () => {
-      const dataToSave = {
-        currentStep: currentStep.value,
-        selectedTemplate: selectedTemplate.value,
-        selectedModel: selectedModel.value,
-        selectedContentType: selectedContentType.value,
-        formInputs: formInputs.value,
-      };
-      sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(dataToSave));
-    }, { deep: true });
-
-    return {
-      user,
-      currentStep,
-      selectedTemplate,
-      selectedModel,
-      selectedContentType,
-      formInputs,
-      generatedContent,
-      isGenerating,
-      showRating,
-      contentTypes,
-      availableModels,
-      handleTemplateSelection,
-      selectModel,
-      selectContentType,
-      nextStep,
-      previousStep,
-      handleGenerateContent, // Changed to use new function
-      handleRatingSubmitted,
-      handleRatingClosed,
-      generationError,
-      handleBackFromGenerate,
-      formattedContentType,
-      apiKeyError,
-      isEditing, // Expose editing state
-      editedContent, // Expose edited content
-      displayContent,
-    };
-  }
+        return {
+            user,
+            currentStep,
+            selectedTemplate,
+            selectedModel,
+            selectedContentType,
+            formInputs,
+            generatedContent,
+            isGenerating,
+            showRating,
+            contentTypes,
+            availableModels,
+            handleTemplateSelection,
+            selectModel,
+            selectContentType,
+            nextStep,
+            previousStep,
+            handleGenerateContent,
+            handleRatingSubmitted,
+            handleRatingClosed,
+            generationError,
+            handleBackFromGenerate,
+            formattedContentType,
+            apiKeyError,
+            isEditing,
+            editedContent,
+            displayContent,
+            handleNotification
+        };
+    }
 };
 </script>
- 
- <style scoped>
+
+<style scoped>
+/* (Your existing styles - no major changes needed) */
 .page-container {
   min-height: 100vh;
   background-color: var(--background-color);
