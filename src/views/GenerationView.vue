@@ -1,6 +1,3 @@
----
-File: /src/views/GenerationView.vue
----
 <template>
   <div class="page-container">
      <!-- Main Content Section -->
@@ -115,8 +112,11 @@ File: /src/views/GenerationView.vue
                    <h3 class="section-title">Preview</h3>
 
                     <!-- Generation Time Tracker -->
-                    <div v-if="generationTime !== null" class="mb-3">
-                        <p>Generation Time: {{ generationTime }} seconds</p>
+                    <div v-if="isGenerating" class="mb-3">
+                        <p>Generating content... {{ generationTime.toFixed(0) }} seconds</p>
+                    </div>
+                    <div v-else-if="generationTime !== null" class="mb-3">
+                        <p>Generation Time: {{ generationTime.toFixed(2) }} seconds</p>
                     </div>
 
                    <!-- Editor Toggle -->
@@ -211,7 +211,7 @@ export default {
         const isEditing = ref(false);  // Track editing state
         const editedContent = ref('');     // Store edited content
         const geminiError = ref(''); //Gemini Error
-        const generationTime = ref(null); // Time taken for generation
+        const generationTime = ref(0); // Time taken for generation, start at 0
 
 
         const { showNotification } = useNotifications(); // Use the composable
@@ -339,10 +339,15 @@ export default {
                         case 'poster':
                             return [
                                 { key: 'body', enhanceable: true },
+                                { key: 'title', enhanceable: true },
                             ]
                         case 'social-post':
                             return [
                                 { key: 'content', enhanceable: true }
+                            ]
+                        case 'social-ad-copy':
+                            return [
+                                 { key: 'callToAction', enhanceable: true },
                             ]
                         case 'email-marketing':
                             return [
@@ -361,6 +366,8 @@ export default {
                         case 'website-copy':
                             return [
                                 { key: 'keyMessage', enhanceable: true },
+                                { key: 'content', enhanceable: true },
+                                { key: 'callToAction', enhanceable: true }
                             ]
                         case 'press-releases':
                             return [
@@ -376,6 +383,20 @@ export default {
                         formInputs.value[`${field.key}Enhance`] = false;
                     }
                 });
+
+                // Initialize the form with required fields
+                if (newContentType === 'website-copy') {
+                    formInputs.value = {
+                        pageType: '',
+                        targetAudience: '',
+                        keyMessage: '',
+                        content: '',
+                        callToAction: '',
+                        keyMessageEnhance: false,
+                        contentEnhance: false,
+                        callToActionEnhance: false
+                    };
+                }
 
             }
         }, { immediate: true });
@@ -422,7 +443,7 @@ export default {
         generationError.value = '';
         geminiError.value = '';
         isGenerating.value = true;
-        generationTime.value = null; // Reset generation time
+        generationTime.value = 0; // Reset to 0
         const startTime = Date.now(); // Record start time
 
         const userId = auth.currentUser?.uid;
@@ -453,10 +474,6 @@ export default {
             showRating.value = true;
             isEditing.value = false;
 
-             const endTime = Date.now(); // Record end time
-            generationTime.value = ((endTime - startTime) / 1000).toFixed(2); // Calculate and format time
-
-
         } catch (error) {
             //generationError.value = error.message;
             if (error.message === "Please sign in or provide a developer API key.") {
@@ -467,6 +484,8 @@ export default {
             }
         } finally {
             isGenerating.value = false;
+             const endTime = Date.now(); // Record end time
+            generationTime.value = (endTime - startTime) / 1000; //update
         }
     };
 

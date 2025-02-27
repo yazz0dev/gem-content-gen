@@ -1,5 +1,3 @@
-// src/components/content/ContentEditor.vue
-
 <template>
     <div class="content-editor">
         <div ref="editableContent" v-html="editedContent" @input="handleInput" @keydown.enter.prevent></div>

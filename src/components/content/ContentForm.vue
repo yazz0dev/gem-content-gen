@@ -24,7 +24,7 @@
         </div>
         <!-- Textarea -->
         <div v-else-if="field.type === 'textarea'" class="d-flex align-items-start">
-          <Field :id="field.key" :name="field.key"
+          <Field as="textarea" :id="field.key" :name="field.key"
                  :rows="field.rows || 3" class="form-control flex-grow-1"  />
            <template v-if="field.enhanceable">
             <div class="form-check ms-3">
@@ -76,86 +76,6 @@
 
       <button type="submit" class="btn btn-primary w-100">Generate</button>
     </VForm>
-
-    <!-- Email Marketing Form -->
-    <div v-if="contentType === 'email-marketing'" class="email-marketing-form">
-      <div class="form-group mb-3">
-        <label for="emailType">Email Type*</label>
-        <select 
-          v-model="formData.emailType" 
-          class="form-control" 
-          id="emailType" 
-          required
-        >
-          <option value="">Select email type</option>
-          <option value="newsletter">Newsletter</option>
-          <option value="promotional">Promotional</option>
-          <option value="welcome">Welcome Email</option>
-          <option value="announcement">Announcement</option>
-        </select>
-      </div>
-
-      <div class="form-group mb-3">
-        <label for="subjectLine">Subject Line*</label>
-        <input 
-          v-model="formData.subjectLine" 
-          type="text" 
-          class="form-control" 
-          id="subjectLine" 
-          required
-        />
-      </div>
-
-      <div class="form-group mb-3">
-        <label for="preheader">Preheader Text (optional)</label>
-        <input 
-          v-model="formData.preheader" 
-          type="text" 
-          class="form-control" 
-          id="preheader"
-        />
-      </div>
-
-      <div class="form-group mb-3">
-        <label for="emailBody">Email Body*</label>
-        <textarea 
-          v-model="formData.body" 
-          class="form-control" 
-          id="emailBody" 
-          rows="5" 
-          required
-        ></textarea>
-        <div class="form-check mt-2">
-          <input 
-            type="checkbox" 
-            class="form-check-input" 
-            id="bodyEnhance" 
-            v-model="formData.bodyEnhance"
-          />
-          <label class="form-check-label" for="bodyEnhance">
-            Enhance content
-          </label>
-        </div>
-      </div>
-
-      <div class="form-group mb-3">
-        <label for="callToAction">Call to Action</label>
-        <input 
-          v-model="formData.callToAction" 
-          type="text" 
-          class="form-control" 
-          id="callToAction"
-        />
-      </div>
-
-      <button 
-        @click="handleSubmit" 
-        class="btn btn-primary" 
-        :disabled="!isValid"
-      >
-        Generate Email
-      </button>
-    </div>
   </div>
 </template>
 
@@ -195,14 +115,9 @@ export default {
         case 'resume': return 'Resume Information';
         case 'poster': return 'Poster Content';
         case 'social-post': return 'Social Media Post Details'; // Corrected hyphen
-        //case 'cover-letter': return 'Cover Letter Details'; // Removed
-        //case 'linkedin-about': return 'LinkedIn About Details'; // Removed
-        //case 'blog-ideas': return 'Blog Post Ideas'; // Removed
         case 'social-ad-copy': return 'Social Media Ad Copy';
         case 'email-marketing': return 'Email Marketing Details';
-        //case 'website-headlines': return 'Website Headline Details'; // Removed
         case 'product-descriptions': return 'Product Description Details';
-        //case 'youtube-content': return 'YouTube Content Details'; // Removed
         case 'business-proposals': return 'Business Proposal Details'; //Added
         case 'website-copy': return 'Website Copy Details'; // Added
         case 'press-releases': return 'Press Release Details';// Added
@@ -243,7 +158,7 @@ export default {
           ];
         case 'poster':
           return [
-            { key: 'title', label: 'Title', type: 'text', required: true },
+            { key: 'title', label: 'Title', type: 'text', required: true , enhanceable: true},
             { key: 'subtitle', label: 'Subtitle', type: 'text' },
             { key: 'body', label: 'Body Text', type: 'textarea', required: true, enhanceable: true },
             { key: 'callToAction', label: 'Call to Action', type: 'text' },
@@ -264,7 +179,7 @@ export default {
             { key: 'product', label: 'Product/Service', type: 'text', required: true },
             { key: 'targetAudience', label: 'Target Audience', type: 'text', required: true },
             { key: 'keyBenefit', label: 'Key Benefit', type: 'text', required: true },
-            { key: 'callToAction', label: 'Call to Action', type: 'text', required: true },
+            { key: 'callToAction', label: 'Call to Action', type: 'text', required: true , enhanceable: true},
           ];
 
           case 'email-marketing':
@@ -296,10 +211,14 @@ export default {
                 ];
             case 'website-copy': // Added
                 return [
-                    { key: 'pageType', label: 'Page Type', type: 'select', required: true, options: ['Homepage', 'About Us', 'Services', 'Contact Us'] },
-                    { key: 'targetAudience', label: 'Target Audience', type: 'text', required: true },
-                    { key: 'keyMessage', label: 'Key Message', type: 'textarea', required: true, enhanceable: true },
-                    { key: 'callToAction', label: 'Call to Action', type: 'text' },
+                    { key: 'pageType', label: 'Page Type', type: 'select', required: true, 
+                      options: ['Homepage', 'About Us', 'Services', 'Contact Us', 'Product', 'Blog'] },
+                    { key: 'targetAudience', label: 'Target Audience', type: 'textarea', required: true,
+                      placeholder: 'Describe your target audience in detail' },
+                    { key: 'keyMessage', label: 'Key Message', type: 'textarea', required: true, enhanceable: true,
+                      placeholder: 'What is the main message you want to convey?' },
+                    { key: 'callToAction', label: 'Call to Action', type: 'text', required: true, enhanceable: true,
+                      placeholder: 'What action do you want visitors to take?' }
                 ];
             case 'press-releases': // Added
                 return [
@@ -349,7 +268,7 @@ export default {
 
       });
       formSchema.value = yup.object().shape(schema);
-      showInstructions.value = ['resume', 'poster', 'social-post', 'cover-letter', 'business-proposals', 'press-releases'].includes(newContentType); //added new
+      showInstructions.value = ['resume', 'poster', 'social-post', 'business-proposals', 'press-releases'].includes(newContentType); //added new
 
     }, { immediate: true });
 
@@ -366,35 +285,21 @@ export default {
 
 
     const handleSubmit = async (values, { resetForm }) => {
-      try {
         // Map VeeValidate values to formData
         Object.keys(values).forEach(key => {
           if (!Array.isArray(formData[key])) {
             formData[key] = values[key];
           }
         });
-
         const dataToSend = {
           formData: {
             ...formData,
-            instructions: instructions.value
+            instructions: instructions.value,
           },
-          selectedTemplate: props.selectedTemplate,
+          selectedTemplate: props.selectedTemplate
         };
-        await emit('generate-content', dataToSend);
-      } catch (error) {
-        console.error('Form submission error:', error);
-      }
+      emit('generate-content', dataToSend);
     };
-
-    const isValid = computed(() => {
-      if (props.contentType === 'email-marketing') {
-        return formData.value.emailType && 
-               formData.value.subjectLine && 
-               formData.value.body;
-      }
-      return true; // Default to true for other content types
-    });
 
     return {
       formData,
@@ -408,7 +313,6 @@ export default {
       addListItem,
       removeListItem,
       handleSubmit,
-      isValid,
     };
   }
 };
