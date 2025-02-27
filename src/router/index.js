@@ -1,10 +1,9 @@
-
-
 // src/router/index.js
 import { createRouter, createWebHistory } from 'vue-router'
 import AuthForm from '@/components/auth/AuthForm.vue';
 import LeaderboardComponent from '@/components/ui/LeaderboardComponent.vue';
 import { auth } from '@/api/firebase.js';
+import { getDeveloperApiKey } from '@/utils/auth.js'; // Import getDeveloperApiKey
 import LoggedOutHomeView from '../views/LoggedOutHomeView.vue'; // Import new view
 import GenerationView from '../views/GenerationView.vue'; // Import renamed view
 
@@ -43,8 +42,8 @@ const routes = [
   {
     path: '/generate',
     name: 'generate',
-    component: GenerationView,  
-    meta: { requiresAuth: true } 
+    component: GenerationView,
+    meta: { requiresAuth: true }
   },
   {
     path: '/auth',
@@ -92,8 +91,8 @@ router.beforeEach(async (to, from, next) => {
 
   // Handle protected routes
   if (to.matched.some(record => record.meta.requiresAuth)) {
-    if (!currentUser) {
-      next('/');
+     if (!currentUser && !getDeveloperApiKey()) { // Check for API key
+      next('/auth'); // Redirect to auth if no user *and* no API key
       return;
     }
     next();

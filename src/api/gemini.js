@@ -13,10 +13,8 @@ const getGenAI = () => {
     const user = auth.currentUser;
     const developerApiKey = getDeveloperApiKey();
 
-    if (user) {
-        genAIInstance = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
-    } else if (developerApiKey) {
-        genAIInstance = new GoogleGenerativeAI(developerApiKey);
+    if (user || developerApiKey) {
+        genAIInstance = new GoogleGenerativeAI(developerApiKey || import.meta.env.VITE_GEMINI_API_KEY);
     } else {
         throw new Error("Please sign in or provide a developer API key.");
     }
@@ -37,8 +35,8 @@ const tools = [
                         contentType: {
                             type: "string",
                             description: "The type of content to generate (e.g., resume, poster, social-post).",
-                            enum: ["resume", "poster", "social-post", "social-ad-copy", "email-marketing", 
-                                 "product-descriptions", "business-proposals", "website-copy", "press-releases"]
+                            enum: ["resume", "poster", "social-post", "social-ad-copy", "email-marketing",
+                                "product-descriptions", "business-proposals", "website-copy", "press-releases"]
                         },
                         formData: {
                             type: "object",
@@ -51,7 +49,7 @@ const tools = [
                                 linkedin: { type: "string" },
                                 github: { type: "string" },
                                 summary: { type: "string" },
-                                workExperience: { 
+                                workExperience: {
                                     type: "array",
                                     items: { type: "string" }
                                 },
@@ -147,7 +145,7 @@ export async function generateContentWithGemini(formData, selectedTemplate, sele
                 if (!formData.emailType) throw new Error("Email type is required");
                 if (!formData.subjectLine) throw new Error("Subject line is required");
                 if (!formData.body) throw new Error("Email body is required");
-                
+
                 // Ensure formData is properly structured
                 formData = {
                     ...formData,
@@ -167,7 +165,12 @@ export async function generateContentWithGemini(formData, selectedTemplate, sele
             const genAI = getGenAI(); // Get the API client when needed
             const model = genAI.getGenerativeModel({ model: selectedModel, tools, safetySettings });
 
-            const prompt = `Generate content for a ${contentType}. Use the provided function call.`;
+            let prompt = `Generate content for a ${contentType}.  Here is the data to use: ${JSON.stringify(formData)}.`;
+
+            if (formData.instructions) {
+                prompt += `\n\nAdditional Instructions: ${formData.instructions}`;
+            }
+            prompt += `\n\nUse the provided function call.`
 
             // Extract enhance flags from formData
             const enhanceFlags = {};
@@ -250,8 +253,8 @@ function constructHtmlFromArgs(args, selectedTemplate, enhanceFlags) {
     // Helper for optional fields
     const addOptionalField = (label, value, id = null) => {
         if (value) {
-          const idAttr = id ? ` id="${id}"` : '';
-          return `<p${idAttr}><strong>${label}:</strong> ${maybeAddEnhancedContent(value, id || label.toLowerCase().replace(/\s+/g, ''))}</p>`;
+            const idAttr = id ? ` id="${id}"` : '';
+            return `<p${idAttr}><strong>${label}:</strong> ${maybeAddEnhancedContent(value, id || label.toLowerCase().replace(/\s+/g, ''))}</p>`;
         }
         return '';
     };

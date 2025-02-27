@@ -95,7 +95,8 @@ async function sendPasswordResetEmail(email) {
 
 // Get User Role (moved here from firebaseUtils)
 async function getUserRole(userId) {
-    if (!userId) return 'guest'; // Or some default
+    if (!userId && !getDeveloperApiKey()) return 'guest'; // If no userId and no developer key, return 'guest'
+    if (!userId) return 'developer'; // If there's no userId, but there IS a developer key
     const userRef = doc(db, 'users', userId);
     const userDoc = await getDoc(userRef);
     if (userDoc.exists()) {

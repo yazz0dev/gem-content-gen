@@ -1,6 +1,6 @@
-
-// src/views/GenerationView.vue
-
+---
+File: /src/views/GenerationView.vue
+---
 <template>
   <div class="page-container">
      <!-- Main Content Section -->
@@ -10,7 +10,7 @@
          <div class="d-block d-md-none step-indicator mb-3">
            Step {{ currentStep }} of 4:
            <span class="current-step-label">
-             {{ ['Content Type', 'Template', 'AI Model', 'Generate'][currentStep - 1] }}
+             {{ ['AI Model', 'Content Type', 'Template', 'Generate'][currentStep - 1] }}
            </span>
          </div>
  
@@ -18,17 +18,17 @@
          <div class="stepper mb-4 d-none d-md-flex">
            <div class="step" :class="{ 'active': currentStep >= 1, 'completed': currentStep > 1 }">
              <div class="step-number">1</div>
-             <div class="step-label">Content Type</div>
+             <div class="step-label">AI Model</div>
            </div>
            <div class="step-connector"></div>
            <div class="step" :class="{ 'active': currentStep >= 2, 'completed': currentStep > 2 }">
              <div class="step-number">2</div>
-             <div class="step-label">Template</div>
+             <div class="step-label">Content Type</div>
            </div>
            <div class="step-connector"></div>
            <div class="step" :class="{ 'active': currentStep >= 3, 'completed': currentStep > 3 }">
              <div class="step-number">3</div>
-             <div class="step-label">AI Model</div>
+             <div class="step-label">Template</div>
            </div>
            <div class="step-connector"></div>
            <div class="step" :class="{ 'active': currentStep >= 4, 'completed': currentStep > 4 }">
@@ -36,9 +36,22 @@
              <div class="step-label">Generate</div>
            </div>
          </div>
+
+        <!-- Model Selection -->
+         <div v-if="currentStep === 1" class="step-content">
+           <div class="model-selector-container">
+             <h3 class="section-title mb-4">Choose AI Model</h3>
+             <ModelSelector :models="availableModels" v-model:modelValue="selectedModel" />
+             <div class="d-flex justify-content-end mt-4">
+               <button @click="nextStep" class="btn btn-primary" :disabled="!selectedModel">
+                 Next <i class="bi bi-arrow-right ms-2"></i>
+               </button>
+             </div>
+           </div>
+         </div>
  
          <!-- Content Type Selection -->
-         <div v-if="currentStep === 1" class="step-content">
+         <div v-if="currentStep === 2" class="step-content">
            <div class="content-type-grid">
              <div v-for="type in contentTypes"
                   :key="type.id"
@@ -52,7 +65,10 @@
                <p>{{ type.description }}</p>
              </div>
            </div>
-           <div class="d-flex justify-content-end mt-3">
+           <div class="d-flex justify-content-between mt-3">
+             <button @click="previousStep" class="btn btn-secondary">
+               <i class="bi bi-arrow-left me-2"></i> Back
+             </button>
              <button @click="nextStep" class="btn btn-primary" :disabled="!selectedContentType">
                Next <i class="bi bi-arrow-right ms-2"></i>
              </button>
@@ -60,7 +76,7 @@
          </div>
  
          <!-- Template Selection -->
-         <div v-if="currentStep === 2" class="step-content">
+         <div v-if="currentStep === 3" class="step-content">
            <TemplateSelector @template-selected="handleTemplateSelection" />
            <div class="d-flex justify-content-between mt-3">
              <button @click="previousStep" class="btn btn-secondary">
@@ -69,22 +85,6 @@
              <button @click="nextStep" class="btn btn-primary" :disabled="!selectedTemplate">
                Next <i class="bi bi-arrow-right ms-2"></i>
              </button>
-           </div>
-         </div>
- 
-         <!-- Model Selection -->
-         <div v-if="currentStep === 3" class="step-content">
-           <div class="model-selector-container">
-             <h3 class="section-title mb-4">Choose AI Model</h3>
-             <ModelSelector :models="availableModels" v-model:modelValue="selectedModel" />
-             <div class="d-flex justify-content-between mt-4">
-               <button @click="previousStep" class="btn btn-secondary">
-                 <i class="bi bi-arrow-left me-2"></i> Back
-               </button>
-               <button @click="nextStep" class="btn btn-primary" :disabled="!selectedModel">
-                 Next <i class="bi bi-arrow-right ms-2"></i>
-               </button>
-             </div>
            </div>
          </div>
  
@@ -114,6 +114,11 @@
                  <div class="preview-section">
                    <h3 class="section-title">Preview</h3>
 
+                    <!-- Generation Time Tracker -->
+                    <div v-if="generationTime !== null" class="mb-3">
+                        <p>Generation Time: {{ generationTime }} seconds</p>
+                    </div>
+
                    <!-- Editor Toggle -->
                    <div class="mb-3" v-if="generatedContent">
                     <button @click="isEditing = !isEditing" class="btn btn-outline-secondary">
@@ -138,6 +143,12 @@
                        @notification="handleNotification"
                      />
                    </div>
+                    <div v-else-if="isGenerating" class="preview-placeholder">
+                      <div class="loading-animation">
+                        <div class="gradient-bar"></div>
+                      </div>
+                        <p>Generating content...</p>
+                    </div>
                    <div v-else class="preview-placeholder">
                      <i class="bi bi-file-earmark-text"></i>
                      <p>Generated content will appear here</p>
@@ -148,11 +159,6 @@
            </div>
          </div>
        </div>
-     </div>
- 
-     <!-- Loading Overlay -->
-     <div v-if="isGenerating" class="loading-overlay">
-       <LoadingSpinner :loading="true" />
      </div>
  
      <!-- Rating Dialog -->
@@ -169,7 +175,6 @@
 import { ref, onMounted, watch, computed } from 'vue';
 import TemplateSelector from '@/components/ui/TemplateSelector.vue';
 import ContentPreview from '@/components/content/ContentPreview.vue';
-import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
 import RatingComponent from '@/components/ui/RatingComponent.vue';
 import ContentForm from '@/components/content/ContentForm.vue';
 import ModelSelector from '@/components/ui/ModelSelector.vue';
@@ -177,7 +182,7 @@ import ContentEditor from '@/components/content/ContentEditor.vue'; // Import
 import { auth } from '@/api/firebase.js';
 import { canGenerateResume } from '@/composables/useFirebase'; //Corrected import
 import { generateContent } from '@/utils/generation';
-import { getUserRole } from '@/utils/auth';
+import { getUserRole, getDeveloperApiKey } from '@/utils/auth';
 import { useDebounce } from '@/composables/useDebounce'; // Import
 import { useNotifications } from '@/composables/useNotification'; // Import
 
@@ -186,11 +191,10 @@ export default {
     components: {
         TemplateSelector,
         ContentPreview,
-        LoadingSpinner,
         RatingComponent,
         ContentForm,
         ModelSelector,
-        ContentEditor, // Add ContentEditor
+        ContentEditor,
     },
     setup() {
         const user = ref(auth.currentUser);
@@ -207,6 +211,8 @@ export default {
         const isEditing = ref(false);  // Track editing state
         const editedContent = ref('');     // Store edited content
         const geminiError = ref(''); //Gemini Error
+        const generationTime = ref(null); // Time taken for generation
+
 
         const { showNotification } = useNotifications(); // Use the composable
 
@@ -388,13 +394,16 @@ export default {
         };
 
         const nextStep = () => {
-            if (currentStep.value === 1 && !selectedContentType.value) {
-                return; // Prevent moving to step 2 without selecting a content type
-            }
-            if (currentStep.value < 4) {
-                currentStep.value++;
-            }
-        };
+          if (currentStep.value === 1 && !selectedModel.value) {
+              return; // Prevent moving to step 2 without selecting a Model
+          }
+          if (currentStep.value === 2 && !selectedContentType.value) {
+              return; // Prevent moving to step 3 without selecting a content type.
+          }
+          if (currentStep.value < 4) {
+              currentStep.value++;
+          }
+      };
 
         const previousStep = () => {
             if (currentStep.value > 1) {
@@ -409,46 +418,57 @@ export default {
             previousStep();
         };
 
-        const handleGenerateContent = async (formData) => {
-            generationError.value = '';
-            geminiError.value = ''; //Resets Gemini Error
-            isGenerating.value = true;
-            const userId = auth.currentUser?.uid;
-            formInputs.value = formData.formData; //Store for content preview
+      const handleGenerateContent = async (formData) => {
+        generationError.value = '';
+        geminiError.value = '';
+        isGenerating.value = true;
+        generationTime.value = null; // Reset generation time
+        const startTime = Date.now(); // Record start time
 
-            try {
-                if (!userId) throw new Error('User not authenticated');
+        const userId = auth.currentUser?.uid;
+        formInputs.value = formData.formData;
 
-                // Use role-based check
-                const userRole = await getUserRole(userId);
-                if (userRole !== 'admin' && !(await canGenerateResume(userId))) {
-                    throw new Error('Daily generation limit reached or insufficient credits.');
-                }
-
-                const result = await generateContent(
-                    formData.formData,
-                    selectedTemplate.value,
-                    selectedModel.value,
-                    selectedContentType.value
-                );
-
-                generatedContent.value = result.html; // Initial generated content
-                editedContent.value = result.html;  // Initialize editedContent
-                showRating.value = true;
-                isEditing.value = false; // Ensure editor is not shown initially
-
-            } catch (error) {
-                //generationError.value = error.message;
-                if (error.message === "Please sign in or provide a developer API key."){
-                    geminiError.value = "Please sign in or provide a developer API key."
-                }
-                else{
-                    generationError.value = error.message
-                }
-            } finally {
-                isGenerating.value = false;
+        try {
+            let userRole = 'guest'; // Default role
+            if (userId) {
+                userRole = await getUserRole(userId);
+            } else if (getDeveloperApiKey()) {
+                userRole = 'developer';
             }
-        };
+
+            if (userRole !== 'admin' && userRole !== 'developer' && !(await canGenerateResume(userId))
+               ) {
+                throw new Error('Daily generation limit reached or insufficient credits.');
+            }
+
+            const result = await generateContent(
+                formData.formData,
+                selectedTemplate.value,
+                selectedModel.value,
+                selectedContentType.value
+            );
+
+            generatedContent.value = result.html;
+            editedContent.value = result.html;
+            showRating.value = true;
+            isEditing.value = false;
+
+             const endTime = Date.now(); // Record end time
+            generationTime.value = ((endTime - startTime) / 1000).toFixed(2); // Calculate and format time
+
+
+        } catch (error) {
+            //generationError.value = error.message;
+            if (error.message === "Please sign in or provide a developer API key.") {
+                geminiError.value = "Please sign in or provide a developer API key."
+            }
+            else {
+                generationError.value = error.message
+            }
+        } finally {
+            isGenerating.value = false;
+        }
+    };
 
         const handleRatingSubmitted = () => {
             showRating.value = false;
@@ -534,14 +554,14 @@ export default {
             editedContent,
             displayContent,
             handleNotification,
-            geminiError
+            geminiError,
+            generationTime
         };
     }
 };
 </script>
 
 <style scoped>
-/* (Your existing styles - no major changes needed) */
 .page-container {
   min-height: 100vh;
   background-color: var(--background-color);
@@ -619,6 +639,7 @@ export default {
   background: var(--background-color);
   border-radius: var(--border-radius-md);
   color: var(--text-secondary);
+    position: relative; /* Add this */
 }
 
 .preview-placeholder i {
@@ -733,4 +754,36 @@ export default {
     font-size: 2rem;
   }
 }
+
+/* Loading animation styles */
+.loading-animation {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+     border-radius: var(--border-radius-md); /* Match parent */
+     overflow: hidden; /* Clip the gradient */
+}
+
+.gradient-bar {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, rgba(37,99,235,0.1) 25%, rgba(37,99,235,0.2) 50%, rgba(37,99,235,0.1) 75%);
+    background-size: 200% 100%;
+    animation: loadingGradient 2s linear infinite;
+}
+
+@keyframes loadingGradient {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
 </style>
