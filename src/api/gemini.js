@@ -156,6 +156,10 @@ export async function generateContentWithGemini(formData, selectedTemplate, sele
 function createPrompt(contentType, formData, template) {
     let prompt = '';
 
+    const templateWrapper = (content) => {
+        return `<div class="${contentType} template-${template.toLowerCase()}">${content}</div>`;
+    };
+
     switch (contentType) {
         case 'resume':
             prompt = `Generate HTML for a resume based on the following information, using the ${template} template:
@@ -208,23 +212,54 @@ function createPrompt(contentType, formData, template) {
             `;
             break;
         case 'email-marketing':
-            prompt = `Generate HTML for a ${formData.emailType} Email Marketing content based on the following:
+            prompt = `Generate HTML for a ${formData.emailType} Email Marketing content with this structure:
+            
+            ${templateWrapper(`
+                <div class="email-header">
+                    <h1>[Subject Line]</h1>
+                    <p class="preheader">[Preheader]</p>
+                </div>
+                <div class="email-content">
+                    [Body Content]
+                </div>
+                <div class="email-cta">
+                    [Call to Action]
+                </div>
+            `)}
+
+            Use these values:
             Subject Line: ${formData.subjectLine}
-            Pre Header: ${formData.preheader}
+            Preheader: ${formData.preheader}
             Body Content: ${formData.body}
             Call to Action: ${formData.callToAction}
-
-            Format the output as HTML, with proper semantic structure.
             `;
             break;
         case 'product-descriptions':
-            prompt = `Generate HTML Product Description based on the following information:
-              Product Name: ${formData.productName}
-              Key Features: ${formData.keyFeatures}
-              Benefits: ${formData.benefits}
-              Target Audience: ${formData.targetAudience}
+            prompt = `Generate HTML Product Description with this structure:
+            
+            ${templateWrapper(`
+                <div class="product-header">
+                    <h1>[Product Name]</h1>
+                </div>
+                <div class="product-features">
+                    <h2>Key Features</h2>
+                    [Features List]
+                </div>
+                <div class="product-benefits">
+                    <h2>Benefits</h2>
+                    [Benefits Content]
+                </div>
+                <div class="product-target">
+                    <h2>Perfect For</h2>
+                    [Target Audience]
+                </div>
+            `)}
 
-              Format the output as HTML.
+            Use these values:
+            Product Name: ${formData.productName}
+            Features: ${formData.keyFeatures}
+            Benefits: ${formData.benefits}
+            Target Audience: ${formData.targetAudience}
             `;
             break;
         case 'landing-page':
@@ -252,18 +287,47 @@ function createPrompt(contentType, formData, template) {
             break;
         case 'press-releases':
             prompt = `Generate HTML Press Release based on the following information:
-                    Headline: ${formData.headline}
-                    Company Name: ${formData.companyName}
-                    City: ${formData.city}
-                    State: ${formData.state}
-                    Release Date: ${formData.releaseDate}
-                    Body: ${formData.body}
-                    Contact Name: ${formData.contactName}
-                    Contact Email: ${formData.contactEmail}
-                    Contact Phone: ${formData.contactPhone}
+
+    Create a professionally formatted press release with this exact structure:
+    
+    <div class="press-release">
+        <div class="press-release-header">
+            <h1>[HEADLINE]</h1>
+            <p class="press-release-dateline">[CITY], [STATE] — [RELEASE_DATE]</p>
+        </div>
         
-                    Format the output as HTML.
-                  `;
+        <div class="press-release-body">
+            [BODY_CONTENT]
+        </div>
+        
+        <div class="press-release-boilerplate">
+            <h3>About [COMPANY_NAME]</h3>
+            <p>Google is a global technology leader focused on improving the ways people connect with information.</p>
+        </div>
+        
+        <div class="press-release-contact">
+            <h3>Media Contact:</h3>
+            <p>[CONTACT_NAME]<br>
+            [CONTACT_EMAIL]<br>
+            [CONTACT_PHONE]</p>
+        </div>
+    </div>
+
+    Use these values:
+    - Headline: ${formData.headline}
+    - Company: ${formData.companyName}
+    - Location: ${formData.city}, ${formData.state}
+    - Date: ${formData.releaseDate || 'FOR IMMEDIATE RELEASE'}
+    - Body: ${formData.body}
+    - Contact: ${formData.contactName || 'Media Relations'}
+    - Email: ${formData.contactEmail || ''}
+    - Phone: ${formData.contactPhone || ''}
+
+    Important:
+    1. Keep all [PLACEHOLDER] tags exactly as shown
+    2. Do not modify the HTML structure
+    3. Use semantic HTML within the body content
+    4. Ensure proper paragraph spacing`;
             break;
 
 

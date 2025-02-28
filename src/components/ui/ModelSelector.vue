@@ -29,7 +29,7 @@
 
 <script>
 import { ref, watchEffect } from 'vue';
-import { checkModelRateLimit } from '@/composables/useFirebase';
+import { useFirebase } from '@/composables/useFirebase'; // Updated import
 import { auth } from '@/api/firebase.js'; // Import auth
 
 export default {
@@ -46,6 +46,7 @@ export default {
   },
   emits: ['update:modelValue'],
   setup(props, { emit }) {
+    const { checkModelRateLimit } = useFirebase(); // Destructure from composable
     const modelStatus = ref(new Map());
     const rateLimitError = ref('');
 

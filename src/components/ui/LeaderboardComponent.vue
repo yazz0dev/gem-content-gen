@@ -1,4 +1,3 @@
-// src/components/ui/LeaderboardComponent.vue
 <template>
     <div class="leaderboard-container">
         <h2 class="leaderboard-title">Model Leaderboard</h2>
@@ -62,7 +61,7 @@
 
 <script>
     import { ref, onMounted, computed, onUnmounted } from 'vue';
-    import { useFirebase, fetchLeaderboardData } from '@/composables/useFirebase.js'; // Update import
+    import { useFirebase } from '@/composables/useFirebase.js'; // Remove fetchLeaderboardData from import
     import { MODEL_LIMITS } from '@/utils/constants';
     import { auth } from '@/api/firebase';
 
@@ -72,8 +71,7 @@
             const leaderboardData = ref([]);
             const loading = ref(true);
             const error = ref(null);
-            const { checkModelRateLimit } = useFirebase();
-
+            const { checkModelRateLimit, fetchLeaderboardData } = useFirebase(); // Get fetchLeaderboardData from composable
 
             const getModelLimit = (modelId, limitType) => {
                 const modelLimits = MODEL_LIMITS[modelId];
@@ -91,7 +89,7 @@
           const fetchData = async () => {
             try {
               const userId = auth.currentUser ? auth.currentUser.uid : null;
-              let fetchedData = await fetchLeaderboardData();
+              let fetchedData = await fetchLeaderboardData(); // Use the function from the composable
 
               const rateLimitChecks = fetchedData.map(model =>
                 checkModelRateLimit(model.id, userId).then(isRateLimited => ({ ...model, isRateLimited }))

@@ -167,7 +167,7 @@
     import ModelSelector from '@/components/ui/ModelSelector.vue';
     import ContentEditor from '@/components/content/ContentEditor.vue';
     import { auth } from '@/api/firebase.js';
-    import { canGenerateResume } from '@/composables/useFirebase';
+    import { useFirebase } from '@/composables/useFirebase';
     import { generateContent } from '@/utils/generation';
     import { getUserRole, getDeveloperApiKey } from '@/utils/auth';
     import { useDebounce } from '@/composables/useDebounce';
@@ -184,6 +184,7 @@
             ContentEditor,
         },
         setup() {
+            const { canGenerateResume } = useFirebase();
             const user = ref(auth.currentUser);
             const currentStep = ref(1);
             const selectedTemplate = ref('');

@@ -3,49 +3,48 @@ import { db } from '@/api/firebase.js';
 import { doc, getDoc, setDoc, updateDoc, collection, getDocs, increment, serverTimestamp, runTransaction } from 'firebase/firestore';
 import { MODEL_LIMITS } from '@/utils/constants';
 import { getUserRole, clearDeveloperApiKey } from '@/utils/auth';
-import { Timestamp } from 'firebase/firestore';
 import { onUnmounted } from 'vue';
 import { auth } from '@/api/firebase.js';
 
-
-// Add retry logic for Firebase operations
-const retryOperation = async (operation, maxRetries = 3) => {
-    let lastError;
-    for (let i = 0; i < maxRetries; i++) {
-        try {
-            return await operation();
-        } catch (error) {
-            lastError = error;
-            // Wait before retrying (exponential backoff)
-            await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
-        }
-    }
-    throw lastError;
-};
-
-// Cache for leaderboard data
-let cachedLeaderboardData = null;
-
-// Clear cache function
-const clearLeaderboardCache = () => {
-  cachedLeaderboardData = null;
-};
-
-// Clear cache on sign-out
-const authListener = auth.onAuthStateChanged(user => {
-  if (!user) {
-    clearLeaderboardCache();
-    clearDeveloperApiKey();
-  }
-});
-
-// Cleanup listener when the composable is unmounted.  Very important!
-onUnmounted(() => {
-  authListener();
-});
-
-
 export function useFirebase() {
+    let cachedLeaderboardData = null;
+    let authListener = null;
+
+    // Setup auth listener
+    const setupAuthListener = () => {
+        authListener = auth.onAuthStateChanged(user => {
+            if (!user) {
+                cachedLeaderboardData = null;
+                clearDeveloperApiKey();
+            }
+        });
+
+        // Cleanup on component unmount
+        onUnmounted(() => {
+            if (authListener) {
+                authListener();
+            }
+        });
+    };
+
+    // Call setup immediately
+    setupAuthListener();
+
+    // Add retry logic for Firebase operations
+    const retryOperation = async (operation, maxRetries = 3) => {
+        let lastError;
+        for (let i = 0; i < maxRetries; i++) {
+            try {
+                return await operation();
+            } catch (error) {
+                lastError = error;
+                // Wait before retrying (exponential backoff)
+                await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
+            }
+        }
+        throw lastError;
+    };
+
     const updateGenerationData = async (userId, selectedModel) => {
         return retryOperation(async () => {
             try {
@@ -222,7 +221,7 @@ export function useFirebase() {
           console.log(`Successfully submitted rating for model: ${modelName}`);
 
            // Clear cache after rating (so the leaderboard updates)
-          clearLeaderboardCache();
+          cachedLeaderboardData = null;
 
         } catch (error) {
           console.error("Error submitting rating:", error);

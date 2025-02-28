@@ -15,7 +15,7 @@
 
 <script>
 import { ref, reactive, watch } from 'vue';
-import { submitModelRating } from '@/composables/useFirebase';
+import { useFirebase } from '@/composables/useFirebase'; // Remove direct submitModelRating import
 
 export default {
 name: 'RatingComponent',
@@ -27,6 +27,7 @@ props: {
 },
 emits: ['rating-submitted', 'rating-closed'],
 setup(props, { emit }) {
+  const { submitModelRating } = useFirebase(); // Get submitModelRating from composable
   const ratings = reactive({
     contentAccuracy: 0,
     formatting: 0,
