@@ -428,8 +428,11 @@
             };
 
             const incrementTimer = () => {
-                generationTime.value += 0.1; // Increment by 100ms
-            }
+                if (isGenerating.value) {
+                    generationTime.value += 0.1;
+                }
+            };
+
             const handleGenerateContent = async (formData) => {
                 generationError.value = '';
                 geminiError.value = '';
@@ -568,7 +571,8 @@
                 displayContent,
                 handleNotification,
                 geminiError,
-                generationTime
+                generationTime,
+                incrementTimer
             };
         }
     };
