@@ -166,10 +166,16 @@ export default {
           ];
         case 'social-post':
           return [
-            { key: 'platform', label: 'Platform', type: 'text', required: true, placeholder: 'e.g., Twitter, Instagram, LinkedIn' },
-            { key: 'content', label: 'Post Content', type: 'textarea', required: true, enhanceable: true },
-            { key: 'hashtags', label: 'Hashtags', type: 'list', placeholder: 'Add a hashtag' },
-            { key: 'mentions', label: 'Mentions', type: 'list', placeholder: 'Add a mention' },
+            { key: 'platform', label: 'Platform', type: 'select', required: true, 
+              options: ['Instagram', 'Facebook', 'LinkedIn', 'Twitter'] },
+            { key: 'content', label: 'Post Content', type: 'textarea', required: true, 
+              placeholder: 'Write your post content (minimum 20 characters)', enhanceable: true },
+            { key: 'hashtags', label: 'Hashtags', type: 'list', 
+              placeholder: 'Add a hashtag (without #)' },
+            { key: 'mentions', label: 'Mentions', type: 'list', 
+              placeholder: 'Add a mention (without @)' },
+            { key: 'tone', label: 'Tone', type: 'select', 
+              options: ['Professional', 'Casual', 'Friendly', 'Humorous', 'Formal'] },
           ];
 
         case  'social-ad-copy':
@@ -285,20 +291,31 @@ export default {
 
 
     const handleSubmit = async (values, { resetForm }) => {
-        // Map VeeValidate values to formData
-        Object.keys(values).forEach(key => {
-          if (!Array.isArray(formData[key])) {
-            formData[key] = values[key];
-          }
-        });
-        const dataToSend = {
-          formData: {
-            ...formData,
-            instructions: instructions.value,
-          },
-          selectedTemplate: props.selectedTemplate
-        };
-      emit('generate-content', dataToSend);
+      // Map VeeValidate values to formData
+      Object.keys(values).forEach(key => {
+        if (!Array.isArray(formData[key])) {
+          formData[key] = values[key];
+        }
+      });
+      
+      const dataToSend = {
+        formData: {
+          ...formData,
+          instructions: instructions.value,
+        },
+        selectedTemplate: props.selectedTemplate
+      };
+      
+      // Start timer update interval when submitting
+      const timerInterval = setInterval(() => {
+        emit('timer-update');
+      }, 100);
+    
+      try {
+        await emit('generate-content', dataToSend);
+      } finally {
+        clearInterval(timerInterval);
+      }
     };
 
     return {

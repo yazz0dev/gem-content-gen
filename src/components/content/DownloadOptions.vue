@@ -13,11 +13,8 @@ File: /src/components/content/DownloadOptions.vue
         <button v-if="showTxtOption" @click="handleDownload('txt')" class="btn btn-secondary me-2" :disabled="disabled">
             <i class="bi bi-file-text me-2"></i>Download Text
         </button>
-        <button v-if="showCopyHtmlOption" @click="handleCopy('html')" class="btn btn-secondary" :disabled="disabled">
-            <i class="bi bi-clipboard me-2"></i>Copy HTML
-        </button>
-        <button v-if="showCopyTxtOption" @click="handleCopy('txt')" class="btn btn-secondary" :disabled="disabled">
-            <i class="bi bi-clipboard me-2"></i>Copy Text
+        <button @click="handleCopy" class="btn btn-secondary" :disabled="disabled">
+            <i class="bi bi-clipboard me-2"></i>Copy Content
         </button>
     </div>
 </template>
@@ -92,16 +89,14 @@ export default {
             }
         };
 
-        const handleCopy = (format) => {
+        const handleCopy = async () => {
             try {
-                if (format === 'html') {
-                    copyToClipboard(props.contentHtml);
-                    notify('HTML copied to clipboard');
-                } else if (format === 'txt') {
-                    const plainText = htmlToPlainText(props.contentHtml);
-                    copyToClipboard(plainText);
-                    notify('Text copied to clipboard');
-                }
+                // Get plain text version
+                const plainText = htmlToPlainText(props.contentHtml);
+                
+                // Copy to clipboard
+                await copyToClipboard(plainText);
+                notify('Content copied to clipboard');
             } catch (error) {
                 console.error('Copy failed:', error);
                 notify('Copy failed. Please try again.', 'error');
@@ -122,9 +117,7 @@ export default {
             isDownloading,
             showPdfOption,
             showHtmlOption,
-            showTxtOption,
-            showCopyHtmlOption,
-            showCopyTxtOption
+            showTxtOption
         };
     }
 };

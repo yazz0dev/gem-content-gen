@@ -142,22 +142,28 @@ export async function generateContentWithGemini(formData, selectedTemplate, sele
             }
 
             const genAI = getGenAI();
-            const model = genAI.getGenerativeModel({ model: selectedModel, tools, safetySettings });
+            // Remove tools for models that don't support function calling
+            const modelConfig = {
+                model: selectedModel,
+                safetySettings
+            };
+
+            // Only add tools for models that support function calling
+            if (selectedModel === 'gemini-2.0-pro-exp-02-05') {
+                modelConfig.tools = tools;
+            }
+
+            const model = genAI.getGenerativeModel(modelConfig);
 
             // Validate and clean the form data
             const { cleanedData } = validateFormData(formData, contentType);
 
-
-            const generateRequest = {
-                contentType,
-                formData: cleanedData,
-                selectedTemplate
-            };
+            // Create prompt based on content type and template
+            const prompt = createPromptForModel(contentType, cleanedData, selectedTemplate);
 
             // Send request with proper content type headers
             const chat = model.startChat({
                 history: [],
-                tools,
                 generationConfig: {
                     temperature: 0.7,
                     topK: 40,
@@ -166,9 +172,9 @@ export async function generateContentWithGemini(formData, selectedTemplate, sele
                 }
             });
 
-            // Correct message format for Gemini API
+            // Send message without function calling for non-supporting models
             const result = await chat.sendMessageStream([
-                { text: JSON.stringify(generateRequest) }
+                { text: prompt }
             ]);
 
             let fullResponse = "";
@@ -178,36 +184,60 @@ export async function generateContentWithGemini(formData, selectedTemplate, sele
                 fullResponse += chunkText;
             }
 
-            // Try parsing as JSON first
-            try {
-                const parsedResponse = JSON.parse(fullResponse);
-                if (parsedResponse?.candidates?.[0]?.content?.parts?.[0]?.functionResponse?.response?.html) {
-                    return { html: parsedResponse.candidates[0].content.parts[0].functionResponse.response.html };
-                }
-                if (parsedResponse?.candidates?.[0]?.content?.parts?.[0]?.text) {
-                    return { html: extractHtmlFromResponse(parsedResponse.candidates[0].content.parts[0].text) };
-                }
-            } catch (parseError) {
-                // If not JSON, treat as plain text/markdown
-                if (fullResponse.trim()) {
-                    return { html: extractHtmlFromResponse(fullResponse) };
-                }
-            }
-
-            throw new Error("Invalid or empty response from Gemini");
+            // Process response
+            return { html: extractHtmlFromResponse(fullResponse) };
 
         } catch (error) {
             console.error("Error in generateContentWithGemini:", error);
-            // Add more specific error handling
+            if (error.message.includes("Function calling is not enabled")) {
+                throw new Error("Selected model doesn't support all features. Please try a different model.");
+            }
+            // Complete error handling section:
             if (error.message.includes("400")) {
                 throw new Error("Invalid request format. Please check your input data.");
             }
-            if (error.message.includes("500")) {
-                throw new Error("The AI service is temporarily unavailable. Please try again.");
+            if (error.message.includes("401")) {
+                throw new Error("Invalid API key. Please check your credentials.");
             }
-            throw new Error(`Failed to generate content: ${error.message}`);
+            if (error.message.includes("429")) {
+                throw new Error("Rate limit exceeded. Please try again later.");
+            }
+            if (error.message.includes("500")) {
+                throw new Error("AI service error. Please try again later.");
+            }
+            throw new Error("Failed to generate content. Please try again.");
         }
     });
+}
+
+function createPromptForModel(contentType, formData, template) {
+    let prompt = `Generate ${contentType} content using the following data:\n\n`;
+    
+    if (contentType === 'social-post') {
+        prompt = `Create an engaging social media post for ${formData.platform} with the following guidelines:
+- Write in a ${formData.tone || 'professional'} tone
+- Include emojis where appropriate
+- Make the content engaging and shareable
+- Format properly for ${formData.platform} best practices
+- Maximum length: ${formData.platform === 'Twitter' ? '280 characters' : '2200 characters'}
+
+Content to enhance: ${formData.content}
+
+${formData.hashtags?.length ? 'Hashtags to include: ' + formData.hashtags.join(' ') : ''}
+${formData.mentions?.length ? 'Mentions to include: ' + formData.mentions.map(m => '@' + m).join(' ') : ''}
+
+Generate HTML with clear structure and formatting suitable for ${formData.platform}.\n`;
+    } else {
+        prompt += `Template: ${template}\n`;
+        prompt += `Content Type: ${contentType}\n\n`;
+        prompt += `Data:\n${JSON.stringify(formData, null, 2)}\n\n`;
+        prompt += "Please generate valid HTML content following these guidelines:\n";
+        prompt += "1. Use semantic HTML5 elements\n";
+        prompt += "2. Include appropriate classes for styling\n";
+        prompt += "3. Ensure content is well-structured and formatted\n";
+    }
+    
+    return prompt;
 }
 
 function extractHtmlFromResponse(responseText) {

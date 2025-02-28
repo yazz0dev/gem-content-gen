@@ -111,12 +111,10 @@
                  <div class="preview-section">
                    <h3 class="section-title">Preview</h3>
 
-                    <!-- Generation Time Tracker -->
-                    <div v-if="isGenerating" class="mb-3">
-                        <p>Generating content... {{ generationTime.toFixed(0) }} seconds</p>
-                    </div>
-                    <div v-else-if="generationTime !== null" class="mb-3">
-                        <p>Generation Time: {{ generationTime.toFixed(2) }} seconds</p>
+                    <!-- Generation Time Tracker - Only show when generating or after generation -->
+                    <div class="mb-3">
+                      <p v-if="isGenerating">Generating content... {{ generationTime.toFixed(1) }} seconds</p>
+                      <p v-else-if="generatedContent">Generation completed in {{ generationTime.toFixed(2) }} seconds</p>
                     </div>
 
                    <!-- Editor Toggle -->
@@ -143,7 +141,7 @@
                        @notification="handleNotification"
                      />
                    </div>
-                    <div v-else-if="isGenerating" class="preview-placeholder">
+                    <div v-else-if="isGenerating" class="preview-placeholder loading">
                       <div class="loading-animation">
                         <div class="gradient-bar"></div>
                       </div>
@@ -803,6 +801,14 @@ export default {
     100% {
         background-position: -200% 0;
     }
+}
+
+.preview-placeholder.loading {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  height: 400px; /* Increased height */
+  background: var(--background-color);
 }
 
 </style>
