@@ -118,7 +118,7 @@ export default {
         case 'social-ad-copy': return 'Social Media Ad Copy';
         case 'email-marketing': return 'Email Marketing Details';
         case 'product-descriptions': return 'Product Description Details';
-        case 'business-proposals': return 'Business Proposal Details'; //Added
+        case 'landing-page': return 'Landing Page Content'; // Added
         case 'website-copy': return 'Website Copy Details'; // Added
         case 'press-releases': return 'Press Release Details';// Added
         default: return 'Content Information';
@@ -133,7 +133,7 @@ export default {
         case 'social-ad-copy': return 'Provide the details for your social media ad copy.';
         case 'email-marketing': return 'Fill in the details for your email marketing campaign.';
         case 'product-descriptions': return 'Enter the details for your product descriptions.';
-        case 'business-proposals': return 'Enter the details for your Business Proposal.'; // Added
+        case 'landing-page': return 'Create compelling landing page content that converts.'; // Added
         case 'website-copy': return 'Fill in the details for your Website Copy.';// Added
         case 'press-releases': return 'Fill in the details for your Press Release.'; // Added
 
@@ -205,15 +205,16 @@ export default {
               { key: 'targetAudience', label: 'Target Audience', type: 'text', required: true },
           ];
 
-           case 'business-proposals': // Added
+           case 'landing-page': // Added
                 return [
-                    { key: 'clientName', label: 'Client Name', type: 'text', required: true },
-                    { key: 'projectName', label: 'Project Name', type: 'text', required: true },
-                    { key: 'projectOverview', label: 'Project Overview', type: 'textarea', required: true, enhanceable: true },
-                    { key: 'objectives', label: 'Objectives', type: 'list', placeholder: 'Add an objective', enhanceable: true },
-                    { key: 'scopeOfWork', label: 'Scope of Work', type: 'textarea', required: true, enhanceable: true},
-                    { key: 'timeline', label: 'Project Timeline', type: 'text' },
-                    { key: 'budget', label: 'Budget', type: 'text' },
+                    { key: 'headline', label: 'Main Headline', type: 'text', required: true, enhanceable: true },
+                    { key: 'subheadline', label: 'Sub-headline', type: 'text', enhanceable: true },
+                    { key: 'valueProposition', label: 'Value Proposition', type: 'textarea', required: true, enhanceable: true },
+                    { key: 'features', label: 'Key Features/Benefits', type: 'list', placeholder: 'Add a feature or benefit', enhanceable: true },
+                    { key: 'targetAudience', label: 'Target Audience', type: 'text', required: true },
+                    { key: 'primaryCTA', label: 'Primary Call to Action', type: 'text', required: true, enhanceable: true },
+                    { key: 'secondaryCTA', label: 'Secondary Call to Action', type: 'text' },
+                    { key: 'socialProof', label: 'Social Proof/Testimonials', type: 'list', placeholder: 'Add testimonial or proof point', enhanceable: true },
                 ];
             case 'website-copy': // Added
                 return [
@@ -274,7 +275,7 @@ export default {
 
       });
       formSchema.value = yup.object().shape(schema);
-      showInstructions.value = ['resume', 'poster', 'social-post', 'business-proposals', 'press-releases'].includes(newContentType); //added new
+      showInstructions.value = ['resume', 'poster', 'social-post', 'landing-page', 'press-releases'].includes(newContentType); //added new
 
     }, { immediate: true });
 

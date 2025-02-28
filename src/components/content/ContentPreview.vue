@@ -58,7 +58,10 @@ export default {
     const previewContainer = ref(null);
 
     const templateClass = computed(() => {
-      return `template-${props.template.toLowerCase()}`;
+      // Remove business-proposals case and add landing-page
+      return `template-${props.template.toLowerCase()}${
+        props.contentType === 'landing-page' ? ' landing-preview' : ''
+      }`;
     });
 
     const platformIcon = computed(() => {
@@ -236,5 +239,11 @@ export default {
 .mentions {
   color: #1da1f2;
   font-weight: 500;
+}
+
+.landing-preview {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
 }
 </style>

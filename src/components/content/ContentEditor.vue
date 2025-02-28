@@ -72,10 +72,15 @@ export default {
             else if (props.contentType === 'product-descriptions') {
                 makeElementEditable(doc, '#product-benefits');
             }
-            // Business Proposals
-            else if (props.contentType === 'business-proposals') {
-                makeElementEditable(doc, '#proposal-overview');
-                makeElementEditable(doc, '#proposal-scope');
+            // Landing Page
+            else if (props.contentType === 'landing-page') {
+                makeElementEditable(doc, '#landing-headline');
+                makeElementEditable(doc, '#landing-subheadline');
+                makeElementEditable(doc, '#value-proposition');
+                makeElementsEditable(doc, '.feature-item');
+                makeElementEditable(doc, '#primary-cta');
+                makeElementEditable(doc, '#secondary-cta');
+                makeElementsEditable(doc, '.testimonial-item');
             }
             // Website Copy
             else if (props.contentType === 'website-copy') {

@@ -35,7 +35,7 @@ const tools = [
                             type: "string",
                             description: "The type of content to generate",
                             enum: ["resume", "poster", "social-post", "social-ad-copy", "email-marketing",
-                                "product-descriptions", "business-proposals", "website-copy", "press-releases"]
+                                "product-descriptions", "landing-page", "website-copy", "press-releases"] // Replace business-proposals with landing-page
                         },
                         formData: {
                             type: "object",
@@ -97,6 +97,11 @@ const validateFormData = (formData, contentType) => {
         'social-post': [
             'platform', 'content', 'hashtags', 'mentions'
         ],
+        'landing-page': [
+            'headline', 'subheadline', 'valueProposition', 'features',
+            'targetAudience', 'primaryCTA', 'secondaryCTA', 'socialProof'
+        ],
+        // Remove business-proposals
         // ...other content types...
     };
 
