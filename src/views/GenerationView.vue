@@ -178,13 +178,13 @@ import ContentPreview from '@/components/content/ContentPreview.vue';
 import RatingComponent from '@/components/ui/RatingComponent.vue';
 import ContentForm from '@/components/content/ContentForm.vue';
 import ModelSelector from '@/components/ui/ModelSelector.vue';
-import ContentEditor from '@/components/content/ContentEditor.vue'; // Import
+import ContentEditor from '@/components/content/ContentEditor.vue'; 
 import { auth } from '@/api/firebase.js';
-import { canGenerateResume } from '@/composables/useFirebase'; //Corrected import
+import { canGenerateResume } from '@/composables/useFirebase'; 
 import { generateContent } from '@/utils/generation';
 import { getUserRole, getDeveloperApiKey } from '@/utils/auth';
-import { useDebounce } from '@/composables/useDebounce'; // Import
-import { useNotifications } from '@/composables/useNotification'; // Import
+import { useDebounce } from '@/composables/useDebounce';
+import { useNotifications } from '@/composables/useNotification'; 
 
 export default {
     name: 'GenerationView',

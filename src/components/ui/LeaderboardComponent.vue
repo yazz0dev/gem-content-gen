@@ -120,6 +120,7 @@ export default {
     return { leaderboardData: modelsWithAvailability, loading, error, getStarClass, getModelLimit }; // Return computed models
   }
 };
+
 </script>
 
 <style scoped>

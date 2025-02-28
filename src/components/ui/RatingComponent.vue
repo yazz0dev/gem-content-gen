@@ -32,7 +32,7 @@ setup(props, { emit }) {
     formatting: 0,
     overallQuality: 0,
   });
-  
+
   const showRating = ref(true);
   const submitError = ref("");
   const isSubmitting = ref(false);
@@ -95,6 +95,7 @@ setup(props, { emit }) {
   };
 }
 };
+
 </script>
 
 <style scoped>

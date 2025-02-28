@@ -126,7 +126,7 @@ export default {
             showCopyHtmlOption,
             showCopyTxtOption
         };
-    },
+    }
 };
 </script>
 

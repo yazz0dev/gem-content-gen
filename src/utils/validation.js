@@ -1,5 +1,3 @@
-// src/utils/validation.js
-
 import * as yup from 'yup';
 
 // Validation function (if you still need it for specific cases, otherwise, use schemas directly)

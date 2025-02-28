@@ -1,4 +1,3 @@
-// src/composables/useDebounce.js
 import { ref, watch, onUnmounted } from 'vue';
 
 export function useDebounce(value, delay = 500) {
@@ -19,7 +18,7 @@ export function useDebounce(value, delay = 500) {
     }, delay);
   });
 
-  onUnmounted(clear); // Clear timeout if component is unmounted
+  onUnmounted(clear); 
 
   return debouncedValue;
 }

@@ -23,12 +23,12 @@
 </template>
 
 <script>
-import { useNotifications } from '@/composables/useNotification'; // Corrected import
+import { useNotifications } from '@/composables/useNotification'; 
 
 export default {
   name: 'NotificationToast',
   setup() {
-    const { notifications, removeNotification } = useNotifications(); // Use the composable
+    const { notifications, removeNotification } = useNotifications(); 
 
     return {
       notifications,

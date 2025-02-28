@@ -1,5 +1,3 @@
-// src/composables/useNotification.js
-//Corrected the singular naming issue
 import { reactive, readonly } from 'vue';
 
 const state = reactive({

@@ -24,7 +24,7 @@ const errorMessages = {
 
 const handleAuthError = (error) => {
   console.error('Auth Error:', error);
-  
+
   if (!navigator.onLine) {
     return 'No internet connection. Please check your network.';
   }

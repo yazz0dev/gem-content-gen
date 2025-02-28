@@ -1,5 +1,3 @@
-// src/composables/useFirebase.js (Reusable Firebase logic)
-
 import { db } from '@/api/firebase.js';
 import { doc, getDoc, setDoc, updateDoc, collection, getDocs, increment, serverTimestamp, runTransaction } from 'firebase/firestore';
 import { MODEL_LIMITS } from '@/utils/constants';

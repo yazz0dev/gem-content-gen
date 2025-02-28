@@ -64,46 +64,6 @@ const tools = [
     }
 ];
 
-const ALLOWED_ENHANCE_FLAGS = {
-    'resume': [
-        'summaryEnhance',
-        'workExperienceEnhance',
-        'educationEnhance',
-        'skillsEnhance'
-    ],
-    'poster': [
-        'bodyEnhance',
-        'titleEnhance'
-    ],
-    'social-post': [
-        'contentEnhance'
-    ],
-    'social-ad-copy': [
-        'contentEnhance',
-        'titleEnhance'
-    ],
-    'email-marketing': [
-        'bodyEnhance',
-        'contentEnhance'
-    ],
-    'product-descriptions': [
-        'benefitsEnhance',
-        'contentEnhance'
-    ],
-    'business-proposals': [
-        'projectOverviewEnhance',
-        'scopeOfWorkEnhance'
-    ],
-    'website-copy': [
-        'keyMessageEnhance',     // Restore keyMessageEnhance
-        'contentEnhance',        // Keep contentEnhance
-        'callToActionEnhance'    // Add callToActionEnhance
-    ],
-    'press-releases': [
-        'bodyEnhance',
-        'contentEnhance'
-    ]
-};
 
 const validateFormData = (formData, contentType) => {
     // Website-copy specific validation
@@ -111,8 +71,8 @@ const validateFormData = (formData, contentType) => {
         return {
             cleanedData: {
                 // Required fields
-                title: formData.pageType || '',           
-                content: formData.keyMessage || '',       
+                title: formData.pageType || '',
+                content: formData.keyMessage || '',
                 body: formData.targetAudience || '',
                 callToAction: formData.callToAction || '',
                 // Optional fields
@@ -187,17 +147,6 @@ export async function generateContentWithGemini(formData, selectedTemplate, sele
             // Validate and clean the form data
             const { cleanedData } = validateFormData(formData, contentType);
 
-            // Add debug logging for website-copy
-            if (contentType === 'website-copy') {
-                console.log('Mapped website-copy data:', cleanedData);
-            }
-
-            // Add debug logging
-            console.log('Sending request to Gemini:', {
-                contentType,
-                formData: cleanedData,
-                selectedTemplate
-            });
 
             const generateRequest = {
                 contentType,

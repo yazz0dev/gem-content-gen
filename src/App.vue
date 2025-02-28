@@ -20,10 +20,10 @@ import { RouterView } from 'vue-router';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/api/firebase.js';
 import { ref, onMounted, getCurrentInstance } from 'vue';
-import { useNotifications } from '@/composables/useNotification'; 
+import { useNotifications } from '@/composables/useNotification';
 import NotificationToast from '@/components/ui/NotificationToast.vue';
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
-import AppHeader from '@/components/AppHeader.vue'; 
+import AppHeader from '@/components/AppHeader.vue';
 
 
 export default {
