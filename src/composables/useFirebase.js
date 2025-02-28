@@ -1,8 +1,12 @@
+// src/composables/useFirebase.js
 import { db } from '@/api/firebase.js';
 import { doc, getDoc, setDoc, updateDoc, collection, getDocs, increment, serverTimestamp, runTransaction } from 'firebase/firestore';
 import { MODEL_LIMITS } from '@/utils/constants';
-import { getUserRole } from '@/utils/auth';
+import { getUserRole, clearDeveloperApiKey } from '@/utils/auth';
 import { Timestamp } from 'firebase/firestore';
+import { onUnmounted } from 'vue';
+import { auth } from '@/api/firebase.js';
+
 
 // Add retry logic for Firebase operations
 const retryOperation = async (operation, maxRetries = 3) => {
@@ -18,6 +22,28 @@ const retryOperation = async (operation, maxRetries = 3) => {
     }
     throw lastError;
 };
+
+// Cache for leaderboard data
+let cachedLeaderboardData = null;
+
+// Clear cache function
+const clearLeaderboardCache = () => {
+  cachedLeaderboardData = null;
+};
+
+// Clear cache on sign-out
+const authListener = auth.onAuthStateChanged(user => {
+  if (!user) {
+    clearLeaderboardCache();
+    clearDeveloperApiKey();
+  }
+});
+
+// Cleanup listener when the composable is unmounted.  Very important!
+onUnmounted(() => {
+  authListener();
+});
+
 
 export function useFirebase() {
     const updateGenerationData = async (userId, selectedModel) => {
@@ -73,166 +99,176 @@ export function useFirebase() {
         });
     };
 
-    return { updateGenerationData };
-}
-
-//Separate function to check can user generate resume.
-export const canGenerateResume = async (userId) => {
-    return retryOperation(async () => {
+    //Separate function to check can user generate resume.
+    const canGenerateResume = async (userId) => {
+      return retryOperation(async () => {
         try {
-            // Get user document directly first
-            const userRef = doc(db, 'users', userId);
-            const userDoc = await getDoc(userRef);
+          // Get user document directly first
+          const userRef = doc(db, 'users', userId);
+          const userDoc = await getDoc(userRef);
 
-            if (!userDoc.exists()) {
-                console.warn(`User document not found for userId: ${userId}. Allowing generation (first-time user).`);
-                return true; // First time user, allow generation
+          if (!userDoc.exists()) {
+            console.warn(`User document not found for userId: ${userId}. Allowing generation (first-time user).`);
+            return true; // First time user, allow generation
+          }
+
+          const userData = userDoc.data();
+          const userRole = userData.role;
+
+          // Admins can always generate.
+          if (userRole === 'admin') {
+            console.log(`User ${userId} is an admin. Generation allowed.`);
+            return true;
+          }
+
+          //Handle free user limits.
+          if (userRole === 'user') {
+            const lastGeneration = userData.lastGenerationDate;
+
+            // Check if lastGenerationDate exists and is a Timestamp object
+            if (!lastGeneration || typeof lastGeneration.toDate !== 'function') {
+              console.warn(`User ${userId} has no valid lastGenerationDate. Allowing generation.`);
+              return true;
             }
 
-            const userData = userDoc.data();
-            const userRole = userData.role;
+            const lastGenerationDate = lastGeneration.toDate();
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const lastDate = new Date(lastGenerationDate.getFullYear(), lastGenerationDate.getMonth(), lastGenerationDate.getDate());
 
-            // Admins can always generate.
-            if (userRole === 'admin') {
-                console.log(`User ${userId} is an admin. Generation allowed.`);
-                return true;
+            const canGenerate = lastDate < today;
+            if (!canGenerate) {
+              console.log(`User ${userId} has reached their daily generation limit.`);
             }
+            return canGenerate;
+          }
 
-            //Handle free user limits.
-            if (userRole === 'user') {
-                const lastGeneration = userData.lastGenerationDate;
-
-                // Check if lastGenerationDate exists and is a Timestamp object
-                if (!lastGeneration || typeof lastGeneration.toDate !== 'function') {
-                    console.warn(`User ${userId} has no valid lastGenerationDate. Allowing generation.`);
-                    return true;
-                }
-
-                const lastGenerationDate = lastGeneration.toDate();
-                const now = new Date();
-                const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                const lastDate = new Date(lastGenerationDate.getFullYear(), lastGenerationDate.getMonth(), lastGenerationDate.getDate());
-
-                const canGenerate = lastDate < today;
-                if (!canGenerate) {
-                    console.log(`User ${userId} has reached their daily generation limit.`);
-                }
-                return canGenerate;
+          // Handle paid user credit limits.
+          if (userRole === 'paid user') {
+            const hasCredits = userData.credits > 0;
+            if (!hasCredits) {
+              console.log(`User ${userId} has insufficient credits to generate.`);
             }
+            return hasCredits;
+          }
 
-            // Handle paid user credit limits.
-            if (userRole === 'paid user') {
-                const hasCredits = userData.credits > 0;
-                if (!hasCredits) {
-                    console.log(`User ${userId} has insufficient credits to generate.`);
-                }
-                return hasCredits;
-            }
-
-            // Default: If user has no role, do not allow generation
-            console.warn(`User ${userId} has an unknown role (${userRole}). Generation not allowed.`);
-            return false;
+          // Default: If user has no role, do not allow generation
+          console.warn(`User ${userId} has an unknown role (${userRole}). Generation not allowed.`);
+          return false;
 
         } catch (error) {
-            console.error('Error checking generation limit:', error);
-            throw new Error(`Unable to check generation limit: ${error.message}`);
+          console.error('Error checking generation limit:', error);
+          throw new Error(`Unable to check generation limit: ${error.message}`);
         }
-    });
-};
+      });
+    };
 
-//Separate function to fetch leaderboard.
-export const fetchLeaderboardData = async () => {
-    return retryOperation(async () => {
+    //Separate function to fetch leaderboard.
+    const fetchLeaderboardData = async () => {
+      return retryOperation(async () => {
         try {
-            const modelRateLimitsRef = collection(db, 'modelRateLimits');
-            const querySnapshot = await getDocs(modelRateLimitsRef);
-            const leaderboardData = [];
+          // Return cached data if available
+          if (cachedLeaderboardData) {
+            return cachedLeaderboardData;
+          }
 
-            for (const docSnapshot of querySnapshot.docs) {
-                const modelData = docSnapshot.data();
-                const modelId = docSnapshot.id;
+          const modelRateLimitsRef = collection(db, 'modelRateLimits');
+          const querySnapshot = await getDocs(modelRateLimitsRef);
+          const leaderboardData = [];
 
-                // Calculate the average rating
-                let averageRating = 0;
-                if (modelData.count > 0) {
-                    const totalRating = modelData.contentAccuracy + modelData.formatting + modelData.overallQuality;
-                    averageRating = totalRating / (modelData.count * 3); // Divide by total possible rating count
-                }
+          for (const docSnapshot of querySnapshot.docs) {
+            const modelData = docSnapshot.data();
+            const modelId = docSnapshot.id;
 
-                leaderboardData.push({
-                    id: modelId,
-                    averageRating: averageRating,
-                    count: modelData.count,
-                    rpm: modelData.rpm || 0,
-                    tpm: modelData.tpm || 0,
-                    rpd: modelData.rpd || 0,
-                });
+            // Calculate the average rating
+            let averageRating = 0;
+            if (modelData.count > 0) {
+              const totalRating = modelData.contentAccuracy + modelData.formatting + modelData.overallQuality;
+              averageRating = totalRating / (modelData.count * 3); // Divide by total possible rating count
             }
 
-            return leaderboardData;
-        } catch (error) {
-            console.error('Error fetching leaderboard data:', error);
-            throw new Error('Failed to fetch leaderboard data');
-        }
-    });
-};
-
-export const submitModelRating = async (modelName, ratings) => {
-    return retryOperation(async () => {
-        try {
-            const modelRef = doc(db, 'modelRateLimits', modelName);
-
-            await updateDoc(modelRef, {
-                contentAccuracy: increment(ratings.contentAccuracy),
-                formatting: increment(ratings.formatting),
-                overallQuality: increment(ratings.overallQuality),
-                count: increment(1),
+            leaderboardData.push({
+              id: modelId,
+              averageRating: averageRating,
+              count: modelData.count,
+              rpm: modelData.rpm || 0,
+              tpm: modelData.tpm || 0,
+              rpd: modelData.rpd || 0,
             });
+          }
+          // Cache the fetched data
+          cachedLeaderboardData = leaderboardData;
 
-            console.log(`Successfully submitted rating for model: ${modelName}`);
-
+          return leaderboardData;
         } catch (error) {
-            console.error("Error submitting rating:", error);
-            throw new Error(`Failed to submit rating. Please try again: ${error.message}`);
+          console.error('Error fetching leaderboard data:', error);
+          throw new Error('Failed to fetch leaderboard data');
         }
-    });
-};
+      });
+    };
 
-export const checkModelRateLimit = async (modelName, userId) => {
-    return retryOperation(async () => {
+    const submitModelRating = async (modelName, ratings) => {
+      return retryOperation(async () => {
         try {
-            const userRole = await getUserRole(userId);
-            if (userRole === 'admin') {
-                console.log(`Admin user ${userId} - bypassing model rate limits.`);
-                return false; // Admins bypass rate limits
-            }
+          const modelRef = doc(db, 'modelRateLimits', modelName);
 
-            //  Fetch *current* rate limit data from Firestore.
-            const modelRef = doc(db, 'modelRateLimits', modelName);
-            const modelDoc = await getDoc(modelRef);
+          await updateDoc(modelRef, {
+            contentAccuracy: increment(ratings.contentAccuracy),
+            formatting: increment(ratings.formatting),
+            overallQuality: increment(ratings.overallQuality),
+            count: increment(1),
+          });
 
-            if (!modelDoc.exists()) {
-                console.warn(`Model data not found for ${modelName}. Assuming not limited.`);
-                return false; // If no data, assume not limited (or handle as you see fit)
-            }
+          console.log(`Successfully submitted rating for model: ${modelName}`);
 
-            const modelData = modelDoc.data();
-            const modelLimits = MODEL_LIMITS[modelName];
-            if (!modelLimits) {
-                console.warn(`Model limits not defined for ${modelName}. Assuming not limited.`);
-                return false;
-            }
+           // Clear cache after rating (so the leaderboard updates)
+          clearLeaderboardCache();
 
-            const { rpm, tpm, rpd } = modelLimits;
-            const { rpm: currentRPM, tpm: currentTPM, rpd: currentRPD } = modelData; // Use names consistent with DB
-            const isLimited = currentRPM >= rpm || currentTPM >= tpm || currentRPD >= rpd;
-            if (isLimited) {
-                console.log(`Model ${modelName} has reached its rate limit.`);
-            }
-            return isLimited;
         } catch (error) {
-            console.error(`Error checking model rate limits: ${error.message}`);
-            throw new Error(`Error checking model rate limits: ${error.message}`);
+          console.error("Error submitting rating:", error);
+          throw new Error(`Failed to submit rating. Please try again: ${error.message}`);
         }
-    });
-};
+      });
+    };
+
+    const checkModelRateLimit = async (modelName, userId) => {
+      return retryOperation(async () => {
+        try {
+          const userRole = await getUserRole(userId);
+          if (userRole === 'admin') {
+            console.log(`Admin user ${userId} - bypassing model rate limits.`);
+            return false; // Admins bypass rate limits
+          }
+
+          //  Fetch *current* rate limit data from Firestore.
+          const modelRef = doc(db, 'modelRateLimits', modelName);
+          const modelDoc = await getDoc(modelRef);
+
+          if (!modelDoc.exists()) {
+            console.warn(`Model data not found for ${modelName}. Assuming not limited.`);
+            return false; // If no data, assume not limited (or handle as you see fit)
+          }
+
+          const modelData = modelDoc.data();
+          const modelLimits = MODEL_LIMITS[modelName];
+          if (!modelLimits) {
+            console.warn(`Model limits not defined for ${modelName}. Assuming not limited.`);
+            return false;
+          }
+
+          const { rpm, tpm, rpd } = modelLimits;
+          const { rpm: currentRPM, tpm: currentTPM, rpd: currentRPD } = modelData; // Use names consistent with DB
+          const isLimited = currentRPM >= rpm || currentTPM >= tpm || currentRPD >= rpd;
+          if (isLimited) {
+            console.log(`Model ${modelName} has reached its rate limit.`);
+          }
+          return isLimited;
+        } catch (error) {
+          console.error(`Error checking model rate limits: ${error.message}`);
+          throw new Error(`Error checking model rate limits: ${error.message}`);
+        }
+      });
+    };
+
+    return { updateGenerationData, canGenerateResume, fetchLeaderboardData, submitModelRating, checkModelRateLimit };
+}

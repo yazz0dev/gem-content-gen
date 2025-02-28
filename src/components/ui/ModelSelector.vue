@@ -6,7 +6,8 @@
              :key="model.id"
              @click="!model.isRateLimited ? selectModel(model.id) : null"
              :class="['model-option', { 'selected': modelValue === model.id, 'rate-limited': model.isRateLimited }]"
-             :title="model.isRateLimited ? 'This model is currently rate-limited. Please try again later.' : ''">
+             :title="model.isRateLimited ? 'This model is currently unavailable due to rate limits. Please try a different model or try again later.' : ''"
+             :style="{ opacity: model.isRateLimited ? 0.5 : 1, pointerEvents: model.isRateLimited ? 'none' : 'auto' }">
           <div class="model-icon">
             <i :class="model.icon"></i>
           </div>
@@ -54,14 +55,14 @@ export default {
       const userId = user ? user.uid : null; // Get the user ID, or null if not logged in
       try {
         for (const model of props.models) {
-          const isLimited = await checkModelRateLimit(model.name, userId); // Pass userId
-          modelStatus.value.set(model.name, isLimited);
+          const isLimited = await checkModelRateLimit(model.id, userId); // Pass userId
+          modelStatus.value.set(model.id, isLimited);
         }
       } catch (error) {
         console.error('Error checking rate limits:', error);
         rateLimitError.value = 'Error checking model availability. Please try again later.';
         props.models.forEach(model => {
-          modelStatus.value.set(model.name, false);
+          modelStatus.value.set(model.id, false);
         });
       }
     });

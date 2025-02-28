@@ -21,48 +21,6 @@ const getGenAI = () => {
 
     return genAIInstance;
 };
-// Define the tools (functions) that Gemini can call
-const tools = [
-    {
-        functionDeclarations: [
-            {
-                name: "generate_html_content",
-                description: "Generates HTML content based on provided data and a template.",
-                parameters: {
-                    type: "object",
-                    properties: {
-                        contentType: {
-                            type: "string",
-                            description: "The type of content to generate",
-                            enum: ["resume", "poster", "social-post", "social-ad-copy", "email-marketing",
-                                "product-descriptions", "landing-page", "website-copy", "press-releases"] // Replace business-proposals with landing-page
-                        },
-                        formData: {
-                            type: "object",
-                            description: "An object containing the data to use for content generation.",
-                            properties: {
-                                // Website copy specific fields
-                                pageType: { type: "string" },
-                                targetAudience: { type: "string" },
-                                keyMessage: { type: "string" },
-                                callToAction: { type: "string" },
-                                // Common required fields
-                                title: { type: "string" },
-                                content: { type: "string" },
-                                body: { type: "string" },
-                                platform: { type: "string" }
-                                // Remove array fields from required schema
-                            },
-                            required: ["title", "content", "body"] // Remove platform from required fields
-                        },
-                        selectedTemplate: { type: "string" }
-                    },
-                    required: ["contentType", "formData", "selectedTemplate"]
-                }
-            }
-        ]
-    }
-];
 
 
 const validateFormData = (formData, contentType) => {
@@ -101,6 +59,7 @@ const validateFormData = (formData, contentType) => {
             'headline', 'subheadline', 'valueProposition', 'features',
             'targetAudience', 'primaryCTA', 'secondaryCTA', 'socialProof'
         ],
+        // Remove business-proposals
         // ...other content types...
     };
 
@@ -138,6 +97,7 @@ const safetySettings = [
     },
 ];
 const limit = pLimit(10);
+
 export async function generateContentWithGemini(formData, selectedTemplate, selectedModel, contentType) {
     return limit(async () => {
         try {
@@ -146,26 +106,14 @@ export async function generateContentWithGemini(formData, selectedTemplate, sele
             }
 
             const genAI = getGenAI();
-            // Remove tools for models that don't support function calling
-            const modelConfig = {
-                model: selectedModel,
-                safetySettings
-            };
-
-            // Only add tools for models that support function calling
-            if (selectedModel === 'gemini-2.0-pro-exp-02-05') {
-                modelConfig.tools = tools;
-            }
-
-            const model = genAI.getGenerativeModel(modelConfig);
+            const model = genAI.getGenerativeModel({ model: selectedModel, safetySettings });
 
             // Validate and clean the form data
             const { cleanedData } = validateFormData(formData, contentType);
 
             // Create prompt based on content type and template
-            const prompt = createPromptForModel(contentType, cleanedData, selectedTemplate);
+            const prompt = createPrompt(contentType, cleanedData, selectedTemplate); //Use CreatePrompt
 
-            // Send request with proper content type headers
             const chat = model.startChat({
                 history: [],
                 generationConfig: {
@@ -173,30 +121,19 @@ export async function generateContentWithGemini(formData, selectedTemplate, sele
                     topK: 40,
                     topP: 0.95,
                     maxOutputTokens: 2048,
-                }
+                },
             });
 
-            // Send message without function calling for non-supporting models
-            const result = await chat.sendMessageStream([
-                { text: prompt }
-            ]);
+            const result = await chat.sendMessageStream(prompt);
 
             let fullResponse = "";
-
             for await (const chunk of result.stream) {
-                const chunkText = chunk.text();
-                fullResponse += chunkText;
+                fullResponse += chunk.text();
             }
-
-            // Process response
-            return { html: extractHtmlFromResponse(fullResponse) };
+            return { html: extractHtmlFromResponse(fullResponse) }; // Use the improved function
 
         } catch (error) {
             console.error("Error in generateContentWithGemini:", error);
-            if (error.message.includes("Function calling is not enabled")) {
-                throw new Error("Selected model doesn't support all features. Please try a different model.");
-            }
-            // Complete error handling section:
             if (error.message.includes("400")) {
                 throw new Error("Invalid request format. Please check your input data.");
             }
@@ -214,43 +151,140 @@ export async function generateContentWithGemini(formData, selectedTemplate, sele
     });
 }
 
-function createPromptForModel(contentType, formData, template) {
-    let prompt = `Generate ${contentType} content using the following data:\n\n`;
-    
-    if (contentType === 'social-post') {
-        prompt = `Create an engaging social media post for ${formData.platform} with the following guidelines:
-- Write in a ${formData.tone || 'professional'} tone
-- Include emojis where appropriate
-- Make the content engaging and shareable
-- Format properly for ${formData.platform} best practices
-- Maximum length: ${formData.platform === 'Twitter' ? '280 characters' : '2200 characters'}
 
-Content to enhance: ${formData.content}
+//Create Prompt
+function createPrompt(contentType, formData, template) {
+    let prompt = '';
 
-${formData.hashtags?.length ? 'Hashtags to include: ' + formData.hashtags.join(' ') : ''}
-${formData.mentions?.length ? 'Mentions to include: ' + formData.mentions.map(m => '@' + m).join(' ') : ''}
+    switch (contentType) {
+        case 'resume':
+            prompt = `Generate HTML for a resume based on the following information, using the ${template} template:
 
-Generate HTML with clear structure and formatting suitable for ${formData.platform}.\n`;
-    } else {
-        prompt += `Template: ${template}\n`;
-        prompt += `Content Type: ${contentType}\n\n`;
-        prompt += `Data:\n${JSON.stringify(formData, null, 2)}\n\n`;
-        prompt += "Please generate valid HTML content following these guidelines:\n";
-        prompt += "1. Use semantic HTML5 elements\n";
-        prompt += "2. Include appropriate classes for styling\n";
-        prompt += "3. Ensure content is well-structured and formatted\n";
+            Full Name: ${formData.fullName}
+            Email: ${formData.email}
+            Phone: ${formData.phone || 'Not provided'}
+            LinkedIn: ${formData.linkedin || 'Not provided'}
+            GitHub: ${formData.github || 'Not provided'}
+            Summary: ${formData.summary || 'Not provided'}
+            Work Experience: ${formData.workExperience?.join('; ') || 'No work experience listed.'}
+            Education: ${formData.education?.join('; ') || 'No education listed.'}
+            Skills: ${formData.skills?.join(', ') || 'No skills listed.'}
+
+            The output should be valid, semantic HTML, well-formatted, and suitable for direct display in a web browser.  Use appropriate CSS classes for styling (e.g., "resume-section", "work-experience-item").
+            `;
+            break;
+
+        case 'poster':
+            prompt = `Generate HTML for a poster based on the following information, using the ${template} template:
+            Title: ${formData.title}
+            Subtitle: ${formData.subtitle || ''}
+            Body: ${formData.body}
+            Call to Action: ${formData.callToAction || ''}
+            Contact Information: ${formData.contactInfo || ''}
+            The output should be valid, semantic HTML, well-formatted, and suitable for direct display in a web browser. Use appropriate CSS classes.
+            `;
+            break;
+
+        case 'social-post':
+            prompt = `Generate HTML for a ${formData.platform} social media post based on the following:
+
+            Content: ${formData.content}
+            Hashtags: ${formData.hashtags?.join(' ') || 'None'}
+            Mentions: ${formData.mentions?.map(m => '@' + m).join(' ') || 'None'}
+            Tone: ${formData.tone || 'Neutral'}
+
+            Format the output as HTML. Include hashtags and mentions as clickable links (if applicable to the platform - use <a> tags with appropriate classes).  Use <p> tags for paragraphs.  Consider platform-specific formatting (e.g., line breaks). Do not include any introductory or explanatory text.
+            `;
+            break;
+        case 'social-ad-copy':
+            prompt = `Generate HTML for a  ${formData.platform} social media ad copy based on the following:
+
+            Product/Service: ${formData.product}
+            Target Audience: ${formData.targetAudience}
+            Key Benefit: ${formData.keyBenefit}
+            Call to Action: ${formData.callToAction}
+
+             Format the output as HTML. Use appropriate CSS classes.
+            `;
+            break;
+        case 'email-marketing':
+            prompt = `Generate HTML for a ${formData.emailType} Email Marketing content based on the following:
+            Subject Line: ${formData.subjectLine}
+            Pre Header: ${formData.preheader}
+            Body Content: ${formData.body}
+            Call to Action: ${formData.callToAction}
+
+            Format the output as HTML, with proper semantic structure.
+            `;
+            break;
+        case 'product-descriptions':
+            prompt = `Generate HTML Product Description based on the following information:
+              Product Name: ${formData.productName}
+              Key Features: ${formData.keyFeatures}
+              Benefits: ${formData.benefits}
+              Target Audience: ${formData.targetAudience}
+
+              Format the output as HTML.
+            `;
+            break;
+        case 'landing-page':
+            prompt = `Generate HTML for a landing page based on the following information:
+            Headline: ${formData.headline}
+            Subheadline: ${formData.subheadline || 'Not provided'}
+            Value Proposition: ${formData.valueProposition}
+            Features/Benefits: ${formData.features?.join(', ') || 'Not provided'}
+            Target Audience: ${formData.targetAudience}
+            Primary Call to Action: ${formData.primaryCTA}
+            Secondary Call to Action: ${formData.secondaryCTA || 'Not provided'}`
+                ;
+            break;
+
+        case 'website-copy':
+            prompt = `Generate HTML for website copy based on the following data, using the ${template} template:
+        
+                    Page Type: ${formData.pageType}
+                    Target Audience: ${formData.targetAudience}
+                    Key Message: ${formData.keyMessage}
+                    Call to Action: ${formData.callToAction}
+                   
+                    The output should be valid, semantic HTML, well-formatted. Use appropriate CSS classes.
+                    `;
+            break;
+        case 'press-releases':
+            prompt = `Generate HTML Press Release based on the following information:
+                    Headline: ${formData.headline}
+                    Company Name: ${formData.companyName}
+                    City: ${formData.city}
+                    State: ${formData.state}
+                    Release Date: ${formData.releaseDate}
+                    Body: ${formData.body}
+                    Contact Name: ${formData.contactName}
+                    Contact Email: ${formData.contactEmail}
+                    Contact Phone: ${formData.contactPhone}
+        
+                    Format the output as HTML.
+                  `;
+            break;
+
+
+        default:
+            prompt = `Generate content based on: ${JSON.stringify(formData)}`;
     }
-    
+
     return prompt;
 }
 
 function extractHtmlFromResponse(responseText) {
-    let html = responseText
+    // Remove any Markdown code block delimiters (```html, ```)
+    let html = responseText.replace(/```html|```/g, '').trim();
+
+    // Basic Markdown-like conversions
+    html = html
         .replace(/^### (.*$)/gim, '<h3>$1</h3>')
         .replace(/^## (.*$)/gim, '<h2>$1</h2>')
         .replace(/^# (.*$)/gim, '<h1>$1</h1>')
         .replace(/^\* (.*$)/gim, '<li>$1</li>')
-        .replace(/<\/li>\n<li>/gim, '</li><li>') 
+        .replace(/<\/li>\n<li>/gim, '</li><li>') //Fix for continuous list
         .replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
         .replace(/\*(.*)\*/gim, '<em>$1</em>')
         .replace(/\[(.*?)\]\((.*?)\)/gim, '<a href="$2" target="_blank">$1</a>');
